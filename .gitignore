@@ -92,3 +92,6 @@ ENV/
 *.cache
 *.embeddings
 *.edgelist
+
+# data
+total6_light
