@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import pandas
 from config import *
-
+from sys import exit
 
 def load_usr_dataset_by_name(fname, length):
     """
@@ -17,6 +17,7 @@ def load_usr_dataset_by_name(fname, length):
     train_data = pandas.read_csv('{}/{}/{}_TRAIN.tsv'.format(dir_path, fname, fname), sep='\t', header=None)
     test_data = pandas.read_csv('{}/{}/{}_TEST.tsv'.format(dir_path, fname, fname), sep='\t', header=None)
     init = train_data.shape[1] - length
+
     x_train, y_train = train_data.values[:, init:].astype(np.float).reshape(-1, length, 1), \
                        train_data[0].values.astype(np.int)
     x_test, y_test = test_data.values[:, init:].astype(np.float).reshape(-1, length, 1), \
@@ -26,6 +27,11 @@ def load_usr_dataset_by_name(fname, length):
     for idx, val in enumerate(lbs):
         y_train_return[y_train == val] = idx
         y_test_return[y_test == val] = idx
+    print(x_train.shape)
+    print(x_test.shape)
+    print(y_train.shape)
+    print(y_test.shape)
+    # exit()
     return x_train, y_train_return, x_test, y_test_return
 
 
