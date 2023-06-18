@@ -1,7 +1,7 @@
 # Time2Graph
 This project implements the Time2Graph model<sup>[1]</sup>, which focuses on time series modeling with dynamic shapelets.
 
-# set up before train
+## set up before train
 1. install conda python 3.6
   ```bash
   conda create --name T2G python=3.6
@@ -27,6 +27,16 @@ to
 
 how to fix write below
 
+## available command set 
+```bash
+python scripts/run.py --dataset ucr-WormsTwoClass --K 50 --C 20 --num_segment 10 --seg_length 24 --kernel dts
+```
+```bash
+python scripts/run.py --dataset ucr-WormsTwoClass --K 50 --C 20 --num_segment 10 --seg_length 24 --kernel dts
+```
+```bash
+python scripts/run.py --dataset ucr-Strawberry   --kernel dts --seg_length 15
+```
 ## Quick Links
 
 - [Building and Testing](#building-and-testing)
