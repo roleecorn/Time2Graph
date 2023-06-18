@@ -4,7 +4,7 @@ from sklearn.preprocessing import MinMaxScaler
 import os
 import random
 import argparse
-MISS_HOUSE=[0,49, 48, 40, 50, 41, 44, 46, 43, 4, 42, 47, 45]
+MISS_HOUSE=[0,49, 48, 40, 50, 41, 44, 46, 43, 4, 42, 47, 45,75]
 
 input_path = "./total6_light"
 time_windows = 1440  # 一天的分鐘數
@@ -78,4 +78,4 @@ X, y = Xydata(args.house)
 filepath = f'{p}/Power{args.house}'
 if not os.path.exists(filepath):
     os.makedirs(filepath)
-write_tsv(f'{filepath}/Power_{args.mode.upper()}.tsv', X, y)
+write_tsv(f'{filepath}/Power{args.house}_{args.mode.upper()}.tsv', X, y)

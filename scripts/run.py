@@ -7,6 +7,7 @@ from archive.load_usr_dataset import load_usr_dataset_by_name
 from time2graph.utils.base_utils import Debugger
 from time2graph.core.model import Time2Graph
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
+MISS_HOUSE=[0,49, 48, 40, 50, 41, 44, 46, 43, 4, 42, 47, 45,75]
 """
     scripts for running test.
     running command:
@@ -84,7 +85,11 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
     Debugger.info_print('running with {}'.format(args.__dict__))
-
+    if 'Power' in args.dataset:
+        # ucr_powerxx
+        if len(args.dataset) > 9:
+            if int(args.dataset[9:]) in MISS_HOUSE:
+                raise ValueError('not a house')
     if args.dataset.startswith('ucr'):
         dataset = args.dataset.rstrip('\n\r').split('-')[-1]
         x_train, y_train, x_test, y_test = load_usr_dataset_by_name(
@@ -128,7 +133,7 @@ if __name__ == '__main__':
             f1_score(y_true=y_test, y_pred=y_pred)
         ))
     with open('result.csv',mode='a+') as f:
-        f.write('{},{:.4f},{:.4f},{:.4f},{:.4f}'.format(
+        f.write('{},{:.4f},{:.4f},{:.4f},{:.4f}\n'.format(
             dataset,
             accuracy_score(y_true=y_test, y_pred=y_pred),
             precision_score(y_true=y_test, y_pred=y_pred),
