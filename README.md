@@ -1,6 +1,32 @@
 # Time2Graph
 This project implements the Time2Graph model<sup>[1]</sup>, which focuses on time series modeling with dynamic shapelets.
 
+# set up before train
+1. install conda python 3.6
+  ```bash
+  conda create --name T2G python=3.6
+  conda avtivate T2G
+  ```
+2. install python modules
+  ```bash
+  pip install -r requirements.txt
+  ```
+3. install torch==0.4.1，0.4.1version is not available in current
+  ```bash
+  pip install torch==0.4.1 -f https://download.pytorch.org/whl/torch_stable.html
+  ```
+4. fix gensim word2vec line 1704 
+  ```python
+  wv.vectors[i] = self.seeded_vector(wv.index2word[i] + str(self.seed), wv.vector_size)`
+  ```
+to
+  ```python
+  wv.vectors[i] = self.seeded_vector(str(wv.index2word[i]) + str(self.seed), wv.vector_size)
+  ```
+5. install deepwalk and fix to [weighted_deepwalk](https://github.com/petecheng/weighted_deepwalk).
+
+how to fix write below
+
 ## Quick Links
 
 - [Building and Testing](#building-and-testing)

@@ -87,3 +87,8 @@ ENV/
 
 # mkdocs documentation
 /site
+
+# models
+*.cache
+*.embeddings
+*.edgelist
