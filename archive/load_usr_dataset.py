@@ -27,11 +27,8 @@ def load_usr_dataset_by_name(fname, length):
     for idx, val in enumerate(lbs):
         y_train_return[y_train == val] = idx
         y_test_return[y_test == val] = idx
-    print(x_train.shape)
-    print(x_test.shape)
-    print(y_train.shape)
-    print(y_test.shape)
-    # exit()
+    Debugger.info_print('usr_dataset four return shape \n{}\n{}\n{}\n{}'.format( 
+        x_train.shape,y_train_return.shape,x_test.shape,y_test_return.shape))
     return x_train, y_train_return, x_test, y_test_return
 
 

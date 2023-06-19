@@ -121,11 +121,9 @@ if __name__ == '__main__':
     m.fit(X=x_train, Y=y_train, cache_dir=cache_dir, n_splits=args.n_splits)
     if args.cache:
         m.save_model(fpath='{}/scripts/cache/{}_embedding_t2g_model.cache'.format(module_path, args.dataset))
-    print("input is:",len(x_test))
+    Debugger.info_print('only predict label not probility')
     y_pred = m.predict(X=x_test)[0]
     
-    print(y_pred)
-    print(f"total:{len(y_pred)} data")
     Debugger.info_print('result: accu {:.4f}, prec {:.4f}, recall {:.4f}, f1 {:.4f}'.format(
             accuracy_score(y_true=y_test, y_pred=y_pred),
             precision_score(y_true=y_test, y_pred=y_pred),

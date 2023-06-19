@@ -134,11 +134,13 @@ class Time2Graph(ModelUtils):
                 the optimal parameters of outer-classifier should be pre-defined.
         """
         # fit data scaler
+        Debugger.info_print('scaler')
         for k in range(self.data_size):
             self.data_scaler[k].fit(X[:, :, k])
         X_scaled = np.zeros(X.shape, dtype=np.float)
         for k in range(self.data_size):
             X_scaled[:, :, k] = self.data_scaler[k].fit_transform(X[:, :, k])
+        Debugger.info_print('learn_shapelets')
         if self.t2g.shapelets is None:
             if self.scaled:
                 self.t2g.learn_shapelets(
@@ -150,21 +152,27 @@ class Time2Graph(ModelUtils):
                     data_size=self.data_size, num_batch=int(X.shape[0] // self.batch_size))
             self.t2g.save_shapelets(fpath=self.shapelets_cache)
             Debugger.info_print('saving shapelets cache to {}'.format(self.shapelets_cache))
+        Debugger.info_print('embedding_model')
+        Debugger.info_print('t2g = Time2GraphEmbed')
         if self.t2g.sembeds is None:
             Debugger.info_print('training embedding model...')
             if self.scaled:
                 self.t2g.fit_embedding_model(x=X_scaled, y=Y, cache_dir=cache_dir)
             else:
                 self.t2g.fit_embedding_model(x=X, y=Y, cache_dir=cache_dir)
+        Debugger.info_print('extract_features')
         x = self.extract_features(X=X, init=self.init)
         Debugger.info_print('extract mixed features done...')
         max_accu, max_prec, max_recall, max_f1, max_metric = -1, -1, -1, -1, -1
+        Debugger.info_print('eturn_metric_method')
         metric_measure = self.return_metric_method(opt_metric=self.t2g.opt_metric)
         tuning, opt_args = kwargs.get('tuning', True), kwargs.get('opt_args', None)
 
         ###################################################
         # fine-tuning to find optimal classifier parameters
+        Debugger.info_print('optimal classifier parameters')
         if tuning:
+            # 透過交叉驗證和網格搜索來找出最佳的模型參數組合
             arguments = self.clf_paras(balanced=balanced)
             for args in arguments:
                 self.clf.set_params(**args)
@@ -206,6 +214,7 @@ class Time2Graph(ModelUtils):
             if self.verbose:
                 Debugger.info_print('args {} for clf {}, performance: {:.4f}, {:.4f}, {:.4f}, {:.4f}'.format(
                     opt_args, self.kernel, tmp[1], tmp[2], tmp[3], tmp[4]))
+        Debugger.info_print('classifier fit')
         self.clf.fit(x, Y)
 
     def predict(self, X, **kwargs):

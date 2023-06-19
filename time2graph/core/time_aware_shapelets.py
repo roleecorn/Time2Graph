@@ -98,6 +98,7 @@ def __shapelet_candidate_loss(cand, time_series_set, label, num_segment, seg_len
     :param kwargs:
     :return:
     """
+    Debugger.info_print('__shapelet_candidate_loss')
     if gpu_enable:
         torch_dtype = torch.cuda.FloatTensor
     else:
@@ -119,7 +120,9 @@ def __shapelet_candidate_loss(cand, time_series_set, label, num_segment, seg_len
     else:
         raise NotImplementedError('unsupported optimizer {} for time-aware shapelets learning'.format(optimizer))
     optimizer = optimizer([local_factor_variable, global_factor_variable], lr=lr)
-
+    Debugger.info_print('optimizer')
+    Debugger.info_print(optimizer)
+    Debugger.info_print(max_iters)
     while cnt < max_iters:
         sampler = StratifiedSampler(label=label, num_class=num_class)
         dataloader = DataLoader(dataset=dataset_numpy, batch_size=batch_size, sampler=sampler)
@@ -153,8 +156,8 @@ def __shapelet_candidate_loss(cand, time_series_set, label, num_segment, seg_len
                 dist_tensor, local_factor_variable, global_factor_variable)
             mean, std = torch.mean(dist_tensor), torch.std(dist_tensor)
             dist_tensor = (dist_tensor - mean) / std
-            # Debugger.info_print('transform: {}, {}'.format(torch.max(dist_tensor), torch.min(dist_tensor)))
-            # Debugger.time_print(msg='pattern distance', begin=begin, profiling=True)
+            Debugger.info_print('transform: {}, {}'.format(torch.max(dist_tensor), torch.min(dist_tensor)))
+            # Debugger.time_print(msg='pattern distance', profiling=True)
             for k in range(1, len(lb_idx)):
                 src = dist_tensor[lb_idx[0]]
                 dst = dist_tensor[lb_idx[k]]
@@ -202,6 +205,7 @@ def __shapelet_candidate_loss(cand, time_series_set, label, num_segment, seg_len
             avg_loss = np.mean(loss_queue.queue[1:])
             if abs(current_loss - avg_loss) < kwargs.get('epsilon', 1e-2):
                 break
+    Debugger.info_print('optimiz end')
     local_factor_variable = torch.abs(local_factor_variable)
     global_factor_variable = torch.abs(global_factor_variable)
     if gpu_enable:

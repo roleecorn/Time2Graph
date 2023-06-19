@@ -24,6 +24,7 @@ class Time2GraphEmbed(ModelUtils):
                  gpu_enable=True, percentile=15, opt_metric='f1', mode='aggregate',
                  batch_size=100, **kwargs):
         super(Time2GraphEmbed, self).__init__(kernel=kernel, **kwargs)
+        Debugger.info_print('Time2GraphEmbed')
         self.K = K
         self.C = C
         self.seg_length = seg_length
@@ -64,6 +65,7 @@ class Time2GraphEmbed(ModelUtils):
             number of batch in training.
         :return:
         """
+        Debugger.info_print('learn_shapelets')
         assert x.shape[1] == num_segment * self.seg_length
         if self.tflag:
             self.shapelets = learn_time_aware_shapelets(
