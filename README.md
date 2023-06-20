@@ -187,6 +187,7 @@ optional arguments:
   --norm            bool, whether to normalize handcraft-features, default False.
   --no_global       bool, whether to use global timing factor 
                     when constructing shapelet evolution graph, default False.
+  --multi_graph         whether a multi graph (default: False)
 ```
 
 Some of the arguments may require further explanation:
