@@ -229,7 +229,7 @@ def transition_matrix(time_series_set, shapelets, seg_length, tflag, multi_graph
     else:
         dist_threshold = threshold
         Debugger.info_print('threshold {}, mean {}'.format(dist_threshold, np.mean(sdist)))
-
+    Debugger.info_print(f'{num_time_series}x{num_segment}')
     n_edges = 0
     for tidx in range(num_time_series):
         for sidx in range(num_segment - 1):

@@ -142,6 +142,8 @@ class ShapeletEmbedding(object):
         :return:
         """
         Debugger.info_print('fit shape: {}'.format(time_series_set.shape))
+        # sdist是一個三維陣列（3D array），它儲存了時間序列與形狀矩陣之間的距離。
+        # tmat 是表示轉移矩陣（Transition Matrix）的多維陣列。這個矩陣代表了不同形狀矩陣（shapelets）之間的轉移關係
         tmat, sdist, dist_threshold = transition_matrix(
             time_series_set=time_series_set, shapelets=shapelets, seg_length=self.seg_length,
             tflag=self.tflag, multi_graph=self.multi_graph, tanh=self.tanh, debug=self.debug,

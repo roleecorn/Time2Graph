@@ -82,7 +82,8 @@ if __name__ == '__main__':
                         help='flag that whether to normalize extracted representations')
     parser.add_argument('--no_global', action='store_false', default=True,
                         help='whether to use global timing factors')
-
+    parser.add_argument('--multi_graph', action='store_false', default=False,
+                        help='whether a multi graph')
     args = parser.parse_args()
     Debugger.info_print('running with {}'.format(args.__dict__))
     if 'Power' in args.dataset:
@@ -109,10 +110,13 @@ if __name__ == '__main__':
                    beta=args.beta, measurement=args.measurement,
                    representation_size=args.embed_size, data_size=args.data_size,
                    scaled=args.scaled, norm=args.norm, global_flag=args.no_global,
+                   multi_graph=args.multi_graph,
                    shapelets_cache='{}/scripts/cache/{}_{}_{}_{}_shapelets.cache'.format(
                        module_path, args.dataset, args.cmethod, args.K, args.seg_length)
                    )
-
+    Debugger.info_print('shapelets_cache={}/scripts/cache/{}_{}_{}_{}_shapelets.cache'.format(
+                       module_path, args.dataset, args.cmethod, args.K, args.seg_length)
+                   )
     res = np.zeros(4, dtype=np.float32)
     Debugger.info_print('training {}_mixed_model ...'.format(args.dataset))
     cache_dir = '{}/scripts/cache/{}/'.format(module_path, args.dataset)
