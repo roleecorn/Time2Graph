@@ -101,7 +101,7 @@ class Time2Graph(ModelUtils):
         @return:
             time series features (embeddings)
         """
-        feat = self.fm.extract_features(samples=X)
+        # feat = self.fm.extract_features(samples=X)
         if self.scaled:
             X_scaled = np.zeros(X.shape, dtype=np.float)
             for k in range(self.data_size):
@@ -109,11 +109,12 @@ class Time2Graph(ModelUtils):
             embed = self.t2g.embed(x=X_scaled, init=init)
         else:
             embed = self.t2g.embed(x=X, init=init)
-        if self.norm:
-            if train:
-                feat = self.feature_scaler.fit_transform(X=feat)
-            else:
-                feat = self.feature_scaler.transform(X=feat)
+        # if self.norm:
+        #     if train:
+        #         feat = self.feature_scaler.fit_transform(X=feat)
+        #     else:
+        #         feat = self.feature_scaler.transform(X=feat)
+        return embed
         return np.concatenate((embed, feat), axis=1)
 
     def fit(self, X, Y, n_splits=5, balanced=True, cache_dir='{}/scripts/cache/'.format(module_path), **kwargs):
