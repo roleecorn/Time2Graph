@@ -84,6 +84,9 @@ if __name__ == '__main__':
                         help='whether to use global timing factors')
     parser.add_argument('--multi_graph', action='store_false', default=False,
                         help='whether a multi graph')
+    parser.add_argument('--feature', type=str, default='all', 
+                        help='what feature want use in classification')
+
     args = parser.parse_args()
     Debugger.info_print('running with {}'.format(args.__dict__))
     if 'Power' in args.dataset:
@@ -95,8 +98,12 @@ if __name__ == '__main__':
         dataset = args.dataset.rstrip('\n\r').split('-')[-1]
         x_train, y_train, x_test, y_test = load_usr_dataset_by_name(
             fname=dataset, length=args.seg_length * args.num_segment)
+        print(x_train.shape)
+        # print(y_test)
     else:
         raise NotImplementedError()
+    # import sys
+    # sys.exit()
     Debugger.info_print('training: {:.2f} positive ratio with {}'.format(float(sum(y_train) / len(y_train)),
                                                                          len(y_train)))
     Debugger.info_print('test: {:.2f} positive ratio with {}'.format(float(sum(y_test) / len(y_test)),
@@ -112,7 +119,8 @@ if __name__ == '__main__':
                    scaled=args.scaled, norm=args.norm, global_flag=args.no_global,
                    multi_graph=args.multi_graph,
                    shapelets_cache='{}/scripts/cache/{}_{}_{}_{}_shapelets.cache'.format(
-                       module_path, args.dataset, args.cmethod, args.K, args.seg_length)
+                       module_path, args.dataset, args.cmethod, args.K, args.seg_length),
+                       feature_mode = args.feature
                    )
     Debugger.info_print('shapelets_cache={}/scripts/cache/{}_{}_{}_{}_shapelets.cache'.format(
                        module_path, args.dataset, args.cmethod, args.K, args.seg_length)
@@ -134,7 +142,7 @@ if __name__ == '__main__':
             recall_score(y_true=y_test, y_pred=y_pred),
             f1_score(y_true=y_test, y_pred=y_pred)
         ))
-    with open('result.csv',mode='a+') as f:
+    with open(f'{args.feature}_result.csv',mode='a+') as f:
         f.write('{},{:.4f},{:.4f},{:.4f},{:.4f}\n'.format(
             dataset,
             accuracy_score(y_true=y_test, y_pred=y_pred),

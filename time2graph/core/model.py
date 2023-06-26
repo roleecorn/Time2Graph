@@ -75,6 +75,7 @@ class Time2Graph(ModelUtils):
         self.norm = norm
         self.data_scaler = [StandardScaler() for _ in range(self.data_size)]
         self.feature_scaler = MinMaxScaler()
+        self.feature_mode =kwargs.get('feature_mode', 'all')
         model_cache = kwargs.get('model_cache', None)
         self.verbose = kwargs.get('verbose', False)
         if model_cache is not None:
@@ -90,7 +91,7 @@ class Time2Graph(ModelUtils):
             self.fm = FeatureModel(seg_length=self.t2g.seg_length, kernel=kernel)
             self.clf = self.clf__()
 
-    def extract_features(self, X, init=0, train=False):
+    def extract_features(self, X, init=0, train=False,mode ='all'):
         """
         @param X:
             ndarray with shape (N x L x data_size), input time series
@@ -101,7 +102,7 @@ class Time2Graph(ModelUtils):
         @return:
             time series features (embeddings)
         """
-        # feat = self.fm.extract_features(samples=X)
+        feat = self.fm.extract_features(samples=X)
         if self.scaled:
             X_scaled = np.zeros(X.shape, dtype=np.float)
             for k in range(self.data_size):
@@ -109,14 +110,21 @@ class Time2Graph(ModelUtils):
             embed = self.t2g.embed(x=X_scaled, init=init)
         else:
             embed = self.t2g.embed(x=X, init=init)
-        # if self.norm:
-        #     if train:
-        #         feat = self.feature_scaler.fit_transform(X=feat)
-        #     else:
-        #         feat = self.feature_scaler.transform(X=feat)
-        return embed
-        return np.concatenate((embed, feat), axis=1)
-
+        if self.norm:
+            if train:
+                feat = self.feature_scaler.fit_transform(X=feat)
+            else:
+                feat = self.feature_scaler.transform(X=feat)
+        # print(embed.shape)
+        # return embed
+        if mode == 'all':
+            return np.concatenate((embed, feat), axis=1)
+        elif mode == 'feat':
+            return feat
+        elif mode =='embed':
+            return embed
+        else:
+            raise ValueError('mode error on extract_features')
     def fit(self, X, Y, n_splits=5, balanced=True, cache_dir='{}/scripts/cache/'.format(module_path), **kwargs):
         """
         @param X:
@@ -162,7 +170,7 @@ class Time2Graph(ModelUtils):
             else:
                 self.t2g.fit_embedding_model(x=X, y=Y, cache_dir=cache_dir)
         Debugger.info_print('extract_features')
-        x = self.extract_features(X=X, init=self.init)
+        x = self.extract_features(X=X, init=self.init,mode=self.feature_mode)
         Debugger.info_print('extract mixed features done...')
         max_accu, max_prec, max_recall, max_f1, max_metric = -1, -1, -1, -1, -1
         Debugger.info_print('eturn_metric_method')
@@ -227,7 +235,7 @@ class Time2Graph(ModelUtils):
         :return:
             predicted label, predicted probability.
         """
-        x = self.extract_features(X=X, init=self.init)
+        x = self.extract_features(X=X, init=self.init,mode=self.feature_mode)
         return self.clf.predict(x), self.clf.predict_proba(x)[:, 1]
 
     def save_model(self, fpath, **kwargs):
