@@ -96,3 +96,4 @@ ENV/
 # data
 total6_light
 dataset/UCRArchive_2018/Power*
+TEPCO_data
