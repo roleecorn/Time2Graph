@@ -49,7 +49,9 @@ class Time2GraphEmbed(ModelUtils):
         self.global_flag = kwargs.pop('global_flag', True)
         self.kwargs = kwargs
         Debugger.info_print('initialize t2g model with {}'.format(self.__dict__))
-
+#########
+# 接下來要改這裡
+#########
     def learn_shapelets(self, x, y, num_segment, data_size, num_batch):
         """
         learn time-aware shapelets.

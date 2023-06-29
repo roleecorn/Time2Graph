@@ -143,11 +143,13 @@ if __name__ == '__main__':
             f1_score(y_true=y_test, y_pred=y_pred)
         ))
     with open('TEPCO_result.csv',mode='a+') as f:
-        f.write('{},{:.4f},{:.4f},{:.4f},{:.4f},{}\n'.format(
+        f.write('{},{:.4f},{:.4f},{:.4f},{:.4f},{:.1f},{},{}\n'.format(
             args.behav,
             accuracy_score(y_true=y_test, y_pred=y_pred),
             precision_score(y_true=y_test, y_pred=y_pred),
             recall_score(y_true=y_test, y_pred=y_pred),
             f1_score(y_true=y_test, y_pred=y_pred),
-            time.time()-start
+            time.time()-start,
+            args.K,
+            args.C,
         ))
