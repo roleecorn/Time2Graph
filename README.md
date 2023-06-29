@@ -173,6 +173,7 @@ optional arguments:
   --init            int, init offset for time series, default 0.
   --gpu_enable      bool, whether to use GPU, default False.
   --opt_metric      str, metric for optimizing out-classifier, default `accuracy`.
+                    `accuracy`,`precision`,`recall`,`f1` can be choosed
   --cache           bool, whether to save model cache, defualt False.
   --embed           str, embedding mode, one of `aggregate` and `concate`.
   --embed_size      int, embedding size in deepwalk, default 256.

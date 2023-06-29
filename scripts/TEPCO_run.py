@@ -3,16 +3,12 @@ import argparse
 import warnings
 import os
 from config import *
+from houses import TEST_HOUSE,TRAIN_HOUSE
 from archive.load_tepco import load_house_dataset_by_houses
 from time2graph.utils.base_utils import Debugger
-from time2graph.core.model import Time2Graph
+from time2graph.core.model_TEPCO import Time2Graph
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
-MISS_HOUSE=[0,49, 48, 40, 50, 41, 44, 46, 43, 4, 42, 47, 45,75]
-TRAIN_HOUSE=[62, 84, 82, 17, 52, 35, 11, 94, 13, 79, 109, 32, 30, 101, 7, 58, 83, 37, 18,
-             36, 9, 68, 29, 21, 93, 27, 66, 15, 26, 5, 19, 51, 10, 90, 8, 92, 38, 99, 69,
-             67, 56, 63, 80, 59, 74, 108, 91, 54, 71, 61, 98, 70, 34, 105, 72, 77, 104,
-             2, 65, 23, 3, 25, 102, 88, 100, 96, 22, 73, 85, 16, 106, 64, 110,31, 86,39,]
-TEST_HOUSE=[76, 53, 107, 20, 95, 78, 55, 12, 1, 33, 89, 60, 28, 57, 6, 24, 14, 103, 87]
+import time
 testhouse = [str(i).zfill(3) for i in TEST_HOUSE]
 trainhouse = [str(i).zfill(3) for i in TRAIN_HOUSE]
 """
@@ -51,6 +47,7 @@ trainhouse = [str(i).zfill(3) for i in TRAIN_HOUSE]
 """
 
 if __name__ == '__main__':
+    start =time.time()
     warnings.filterwarnings(module='sklearn*', action='ignore', category=DeprecationWarning)
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--K', type=int, default=100, help='number of shapelets extracted')
@@ -65,7 +62,8 @@ if __name__ == '__main__':
     parser.add_argument('--beta', type=float, default=0.05, help='penalty parameter of global timing factor')
     parser.add_argument('--init', type=int, default=0, help='init index of time series data')
     parser.add_argument('--gpu_enable', action='store_true', default=False, help='bool, whether to use GPU')
-    parser.add_argument('--opt_metric', type=str, default='accuracy', help='which metric to optimize in prediction')
+    parser.add_argument('--opt_metric', type=str, default='accuracy', 
+                        help='which metric to optimize in prediction,accuracy,precision,recall,f1')
     parser.add_argument('--cache', action='store_true', default=False, help='whether to dump model to local file')
     parser.add_argument('--embed', type=str, default='aggregate',
                         help='which embed strategy to use (aggregate/concatenate)')
@@ -100,9 +98,9 @@ if __name__ == '__main__':
 
     # x_train, y_train, x_test, y_test = load_house_dataset_by_name(
     #     fname='001', length=args.seg_length * args.num_segment)
-    x_train, y_train, x_test, y_test = load_house_dataset_by_houses(
+    x_train, y_train, x_test, y_test,z_train,z_test = load_house_dataset_by_houses(
         TEST_HOUSE=testhouse,TRAIN_HOUSE=trainhouse,assign_behavior=args.behav)
-    print(x_train.shape)
+
 
     Debugger.info_print('training: {:.2f} positive ratio with {}'.format(float(sum(y_train) / len(y_train)),
                                                                          len(y_train)))
@@ -132,11 +130,11 @@ if __name__ == '__main__':
     cache_dir = '{}/scripts/cache/{}/'.format(module_path, args.dataset)
     if not path.isdir(cache_dir):
         os.mkdir(cache_dir)
-    m.fit(X=x_train, Y=y_train, cache_dir=cache_dir, n_splits=args.n_splits)
+    m.fit(X=x_train, Y=y_train,Z=z_train, cache_dir=cache_dir, n_splits=args.n_splits)
     if args.cache:
         m.save_model(fpath='{}/scripts/cache/{}_embedding_t2g_model.cache'.format(module_path, args.dataset))
     Debugger.info_print('only predict label not probility')
-    y_pred = m.predict(X=x_test)[0]
+    y_pred = m.predict(X=x_test,Z=z_test)[0]
     
     Debugger.info_print('result: accu {:.4f}, prec {:.4f}, recall {:.4f}, f1 {:.4f}'.format(
             accuracy_score(y_true=y_test, y_pred=y_pred),
@@ -145,10 +143,11 @@ if __name__ == '__main__':
             f1_score(y_true=y_test, y_pred=y_pred)
         ))
     with open('TEPCO_result.csv',mode='a+') as f:
-        f.write('{},{:.4f},{:.4f},{:.4f},{:.4f}\n'.format(
+        f.write('{},{:.4f},{:.4f},{:.4f},{:.4f},{}\n'.format(
             args.behav,
             accuracy_score(y_true=y_test, y_pred=y_pred),
             precision_score(y_true=y_test, y_pred=y_pred),
             recall_score(y_true=y_test, y_pred=y_pred),
-            f1_score(y_true=y_test, y_pred=y_pred)
+            f1_score(y_true=y_test, y_pred=y_pred),
+            time.time()-start
         ))

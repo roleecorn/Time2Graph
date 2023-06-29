@@ -30,55 +30,63 @@ def assign_sleep(row):
         return 0
 assign={'sleep':assign_sleep,'out':assign_out,'meal':assign_meal,'other':assign_other}
 
-def load_house_dataset_by_name(fname, assign_behavior):
-    """
-    load TEPCO dataset given household number.
-    :param fname:
-        household id:str
-    :param length:
-        time series length that want to load in.
-    :return:
-        x_train, y_train_return, x_test, y_test_return
-    """
+# def load_house_dataset_by_houses(TRAIN_HOUSE, TEST_HOUSE, assign_behavior):
+#     """
+#     load TEPCO dataset given household number.
+#     :param TRAIN_HOUSE:
+#         list of training household ids
+#     :param TEST_HOUSE:
+#         list of testing household ids
+#     :param length:
+#         time series length that want to load in.
+#     :return:
+#         x_train, y_train_return, x_test, y_test_return
+#     """
 
-    dir_path = '{}/TEPCO_data'.format(module_path)
-    # Load the labels
-    labels = pd.read_csv('{}/behavior/{}/001.csv'.format(dir_path, int(fname)),
-                         usecols=['home(sleep)','home(other)','home(meal)','out'])
-    print(assign_behavior)
-    mapping =assign[assign_behavior]
-    print(mapping)
-    import sys
-    sys.exit()
-    labels['behavior'] = labels.apply(mapping, axis=1)
-    datas = pd.read_csv('{}/1day/{}.csv'.format(dir_path, fname))['total_power']
+#     dir_path = '{}/TEPCO_data'.format(module_path)
 
-    # Ensure the lengths of the labels and the data are as expected
-    assert len(labels) == 96, "Labels length mismatch."
-    assert len(datas) == 1440, "Data length mismatch."
-    # Reshape data into 15-minute intervals and ensure its length matches with labels
-    x = datas.values.reshape(-1, 15, 1).astype(np.float)  # Add the extra dimension here
-    assert len(x) == len(labels), "Mismatch between reshaped data and labels length."
+#     x_train, y_train, x_test, y_test = [], [], [], []
 
-    # Convert labels to integers
-    y = labels['behavior'].values.astype(np.int)
+#     # Load the training data
+#     mapping =assign[assign_behavior]
+#     for fname in TRAIN_HOUSE:
+#         labels = pd.read_csv('{}/behavior/{}/001.csv'.format(dir_path, int(fname)),
+#                              usecols=['home(sleep)','home(other)','home(meal)','out'])
+#         labels['behavior'] = labels.apply(mapping, axis=1)
+#         datas = pd.read_csv('{}/1day/{}.csv'.format(dir_path, fname))['total_power']
+#         x = datas.values.reshape(-1, 15, 1).astype(np.float)
+#         y = labels['behavior'].values.astype(np.int)
+#         x_train.append(x)
+#         y_train.append(y)
 
-    # Convert labels to start from 0
-    lbs = np.unique(y)
-    y_return = np.copy(y)
-    for idx, val in enumerate(lbs):
-        y_return[y == val] = idx
+#     # Load the testing data
+#     for fname in TEST_HOUSE:
+#         labels = pd.read_csv('{}/behavior/{}/001.csv'.format(dir_path, int(fname)),
+#                              usecols=['home(sleep)','home(other)','home(meal)','out'])
+#         labels['behavior'] = labels.apply(mapping, axis=1)
+#         datas = pd.read_csv('{}/1day/{}.csv'.format(dir_path, fname))['total_power']
+#         x = datas.values.reshape(-1, 15, 1).astype(np.float)
+#         y = labels['behavior'].values.astype(np.int)
+#         x_test.append(x)
+#         y_test.append(y)
 
-    # Split the data into train and test sets
-    split_idx = int(len(x) * 0.8)  # Change this value as needed. 0.8 means 80% of data used for training
-    x_train, x_test = x[:split_idx], x[split_idx:]
-    y_train_return, y_test_return = y_return[:split_idx], y_return[split_idx:]
+#     # Convert list of arrays to one large array
+#     x_train = np.concatenate(x_train, axis=0)
+#     y_train = np.concatenate(y_train, axis=0)
+#     x_test = np.concatenate(x_test, axis=0)
+#     y_test = np.concatenate(y_test, axis=0)
 
-    Debugger.info_print('usr_dataset four return shape \n{}\n{}\n{}\n{}'.format( 
-        x_train.shape,y_train_return.shape,x_test.shape,y_test_return.shape))
+#     # Convert labels to start from 0
+#     lbs = np.unique(np.concatenate([y_train, y_test], axis=0))
+#     y_train_return, y_test_return = np.copy(y_train), np.copy(y_test)
+#     for idx, val in enumerate(lbs):
+#         y_train_return[y_train == val] = idx
+#         y_test_return[y_test == val] = idx
+
+#     Debugger.info_print('usr_dataset four return shape \n{}\n{}\n{}\n{}'.format( 
+#         x_train.shape,y_train_return.shape,x_test.shape,y_test_return.shape))
         
-    return x_train, y_train_return, x_test, y_test_return
-
+#     return x_train, y_train_return, x_test, y_test_return
 def load_house_dataset_by_houses(TRAIN_HOUSE, TEST_HOUSE, assign_behavior):
     """
     load TEPCO dataset given household number.
@@ -89,41 +97,52 @@ def load_house_dataset_by_houses(TRAIN_HOUSE, TEST_HOUSE, assign_behavior):
     :param length:
         time series length that want to load in.
     :return:
-        x_train, y_train_return, x_test, y_test_return
+        x_train, y_train_return, x_test, y_test_return, z_train, z_test
     """
 
     dir_path = '{}/TEPCO_data'.format(module_path)
 
     x_train, y_train, x_test, y_test = [], [], [], []
+    z_train, z_test = [], []  # New lists to store the time information
 
     # Load the training data
-    mapping =assign[assign_behavior]
+    mapping = assign[assign_behavior]
     for fname in TRAIN_HOUSE:
         labels = pd.read_csv('{}/behavior/{}/001.csv'.format(dir_path, int(fname)),
-                             usecols=['home(sleep)','home(other)','home(meal)','out'])
+                             usecols=['home(sleep)','home(other)','home(meal)','out', 'time'])  # Include 'time'
         labels['behavior'] = labels.apply(mapping, axis=1)
+        # Convert 'time' to datetime and extract the hour
+        labels['time'] = pd.to_datetime(labels['time']).dt.hour
         datas = pd.read_csv('{}/1day/{}.csv'.format(dir_path, fname))['total_power']
         x = datas.values.reshape(-1, 15, 1).astype(np.float)
         y = labels['behavior'].values.astype(np.int)
+        z = labels['time'].values  # Extract the 'time' values
         x_train.append(x)
         y_train.append(y)
+        z_train.append(z)  # Append the time information
 
     # Load the testing data
     for fname in TEST_HOUSE:
         labels = pd.read_csv('{}/behavior/{}/001.csv'.format(dir_path, int(fname)),
-                             usecols=['home(sleep)','home(other)','home(meal)','out'])
+                             usecols=['home(sleep)','home(other)','home(meal)','out', 'time'])  # Include 'time'
         labels['behavior'] = labels.apply(mapping, axis=1)
+        # Convert 'time' to datetime and extract the hour
+        labels['time'] = pd.to_datetime(labels['time']).dt.hour / 24
         datas = pd.read_csv('{}/1day/{}.csv'.format(dir_path, fname))['total_power']
         x = datas.values.reshape(-1, 15, 1).astype(np.float)
         y = labels['behavior'].values.astype(np.int)
+        z = labels['time'].values  # Extract the 'time' values
         x_test.append(x)
         y_test.append(y)
+        z_test.append(z)  # Append the time information
 
     # Convert list of arrays to one large array
     x_train = np.concatenate(x_train, axis=0)
     y_train = np.concatenate(y_train, axis=0)
     x_test = np.concatenate(x_test, axis=0)
     y_test = np.concatenate(y_test, axis=0)
+    z_train = np.concatenate(z_train, axis=0)  # Concatenate the time information
+    z_test = np.concatenate(z_test, axis=0)  # Concatenate the time information
 
     # Convert labels to start from 0
     lbs = np.unique(np.concatenate([y_train, y_test], axis=0))
@@ -135,7 +154,7 @@ def load_house_dataset_by_houses(TRAIN_HOUSE, TEST_HOUSE, assign_behavior):
     Debugger.info_print('usr_dataset four return shape \n{}\n{}\n{}\n{}'.format( 
         x_train.shape,y_train_return.shape,x_test.shape,y_test_return.shape))
         
-    return x_train, y_train_return, x_test, y_test_return
+    return x_train, y_train_return, x_test, y_test_return,z_train,z_test 
 
 
 if __name__ == "__main__":
