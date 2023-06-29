@@ -111,8 +111,6 @@ def __shapelet_candidate_loss(cand, time_series_set, label, num_segment, seg_len
     current_loss, loss_queue, cnt, nan_cnt = 0.0, Queue(max_size=int(num_batch * 0.2)), 0, 0
     current_main_loss, current_penalty_loss = 0.0, 0.0
     max_iters, optimizer = kwargs.get('max_iters', 1), kwargs.get('optimizer', 'Adam')
-    Debugger.info_print('optimizer')
-    Debugger.info_print(optimizer)
     if optimizer == 'Adam':
         optimizer = optim.Adam
     elif optimizer == 'Adadelta':
@@ -156,7 +154,7 @@ def __shapelet_candidate_loss(cand, time_series_set, label, num_segment, seg_len
                 dist_tensor, local_factor_variable, global_factor_variable)
             mean, std = torch.mean(dist_tensor), torch.std(dist_tensor)
             dist_tensor = (dist_tensor - mean) / std
-            Debugger.info_print('transform: {}, {}'.format(torch.max(dist_tensor), torch.min(dist_tensor)))
+            Debugger.debug_print('transform: {}, {}'.format(torch.max(dist_tensor), torch.min(dist_tensor)))
             # Debugger.time_print(msg='pattern distance', profiling=True)
             for k in range(1, len(lb_idx)):
                 src = dist_tensor[lb_idx[0]]
