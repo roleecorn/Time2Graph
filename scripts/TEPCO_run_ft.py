@@ -98,8 +98,6 @@ if __name__ == '__main__':
     Debugger.info_print('running with {}'.format(args.__dict__))
 
 
-    # x_train, y_train, x_test, y_test = load_house_dataset_by_name(
-    #     fname='001', length=args.seg_length * args.num_segment)
     x_train, y_train, x_test, y_test,z_train,z_test = load_house_dataset_by_houses(
         TEST_HOUSE=testhouse,TRAIN_HOUSE=trainhouse,assign_behavior=args.behav)
     ker = args.kernel
@@ -121,6 +119,11 @@ if __name__ == '__main__':
                        feature_mode = args.feature
                    )
     x = m.fm.extract_features(x_train)
+    xt=m.fm.extract_features(x_test)
+    z_train = z_train.reshape(-1, 1)
+    z_test = z_test.reshape(-1, 1)
+    x=np.concatenate((x,z_train), axis=1)
+    xt=np.concatenate((xt,z_test), axis=1)
     # print(m.fm.clf)
     res = np.zeros(4, dtype=np.float32)
     Debugger.info_print('training {}_mixed_model ...'.format(args.dataset))
@@ -159,7 +162,7 @@ if __name__ == '__main__':
         os.mkdir(cache_dir)
     m.clf.fit(X=x, y=y_train)
     Debugger.info_print('only predict label not probility')
-    y_pred = m.clf.predict(X=m.fm.extract_features(x_test))
+    y_pred = m.clf.predict(X=xt)
     
     Debugger.info_print('result: accu {:.4f}, prec {:.4f}, recall {:.4f}, f1 {:.4f}'.format(
             accuracy_score(y_true=y_test, y_pred=y_pred),
@@ -167,14 +170,13 @@ if __name__ == '__main__':
             recall_score(y_true=y_test, y_pred=y_pred),
             f1_score(y_true=y_test, y_pred=y_pred)
         ))
-    with open('tttttt.csv',mode='a+') as f:
-        f.write('{},{:.4f},{:.4f},{:.4f},{:.4f},{:.1f},{},{}\n'.format(
+    with open('feature_base.csv',mode='a+') as f:
+        f.write('{},{},{:.4f},{:.4f},{:.4f},{:.4f},{:.1f}\n'.format(
             args.behav,
+            args.kernel,
             accuracy_score(y_true=y_test, y_pred=y_pred),
             precision_score(y_true=y_test, y_pred=y_pred),
             recall_score(y_true=y_test, y_pred=y_pred),
             f1_score(y_true=y_test, y_pred=y_pred),
             time.time()-start,
-            args.K,
-            args.C,
         ))
