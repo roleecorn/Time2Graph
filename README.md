@@ -201,8 +201,7 @@ Some of the arguments may require further explanation:
 We include all three benchmark *UCR* datasets in the ``dataset`` directory, which is a subset of *UCR-Archive* time series dataset. See [Data Sets](#data-sets) for more details. Then a demo script is available by calling `scripts/run.py`, as the following:
 
 ```shell
-python scripts/run.py --dataset ucr-Earthquakes --K 50 --C 500 
---num_segment 21 --seg_length 24 --data_size 1 --embed concate --percentile 5 --gpu_enable
+python scripts/run.py --dataset ucr-Earthquakes --K 50 --C 500 --num_segment 21 --seg_length 24 --data_size 1 --embed concate --percentile 5 --gpu_enable
 ```
 
 ## Evaluation
