@@ -20,13 +20,13 @@ def assign_sleep(row):
         return 0
 def assign_all(row):
     if row['home(meal)'] == 1:
-        return 1
+        return 0
     if row['home(other)'] == 1:
-        return 2
+        return 1
     if row['out'] == 1:
-        return 3
+        return 2
     if row['home(sleep)'] == 1:
-        return 4
-    return 4
+        return 3
+    return 3
 
 assign={'sleep':assign_sleep,'out':assign_out,'meal':assign_meal,'other':assign_other,'all':assign_all}

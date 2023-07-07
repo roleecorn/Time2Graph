@@ -262,7 +262,84 @@ def transition_matrix(time_series_set, shapelets, seg_length, tflag, multi_graph
                 tmat[k, i, :] /= np.sum(tmat[k, i, :])
     return tmat, sdist, dist_threshold
 
+def compute_sub_transition_matrix(time_series_set, shapelets, seg_length, tflag, multi_graph, percentile, threshold, 
+        tanh, debug, init, warp, measurement, global_flag, num_segment, gcnt):
+    """
+    compute sub shapelet transition matrix.
+    """
+    num_shapelet = len(shapelets)
+    num_time_series = time_series_set.shape[0]
+    tmat = np.zeros((gcnt, num_shapelet, num_shapelet), dtype=np.float32)
+    sdist = shapelet_distance(
+        time_series_set=time_series_set, shapelets=shapelets, seg_length=seg_length, tflag=tflag,
+        tanh=tanh, debug=debug, init=init, warp=warp, measurement=measurement, global_flag=global_flag
+    )
+    if percentile is not None:
+        dist_threshold = np.percentile(sdist, percentile)
+        Debugger.info_print('threshold({}) {}, mean {}'.format(percentile, dist_threshold, np.mean(sdist)))
+    else:
+        dist_threshold = threshold
+        Debugger.info_print('threshold {}, mean {}'.format(dist_threshold, np.mean(sdist)))
+    Debugger.info_print(f'{num_time_series}x{num_segment}')
+    n_edges = 0
+    for tidx in range(num_time_series):
+        for sidx in range(num_segment - 1):
+            src_dist = sdist[tidx, sidx, :]
+            dst_dist = sdist[tidx, sidx + 1, :]
+            src_idx = np.argwhere(src_dist <= dist_threshold).reshape(-1)
+            dst_idx = np.argwhere(dst_dist <= dist_threshold).reshape(-1)
+            if len(src_idx) == 0 or len(dst_idx) == 0:
+                continue
+            n_edges += len(src_idx) * len(dst_idx)
+            src_dist[src_idx] = 1.0 - minmax_scale(src_dist[src_idx])
+            dst_dist[dst_idx] = 1.0 - minmax_scale(dst_dist[dst_idx])
+            for src in src_idx:
+                if multi_graph:
+                    tmat[sidx, src, dst_idx] += (src_dist[src] * dst_dist[dst_idx])
+                else:
+                    tmat[0, src, dst_idx] += (src_dist[src] * dst_dist[dst_idx])
+        Debugger.debug_print(
+            '{:.2f}% transition matrix computed...'.format(float(tidx + 1) * 100 / num_time_series),
+            debug=debug
+        )
+    Debugger.info_print('{} edges involved in shapelets graph'.format(n_edges))
+    tmat[tmat <= __tmat_threshold] = 0.0
+    for k in range(gcnt):
+        for i in range(num_shapelet):
+            norms = np.sum(tmat[k, i, :])
+            if norms == 0:
+                tmat[k, i, i] = 1.0
+            else:
+                tmat[k, i, :] /= np.sum(tmat[k, i, :])
+    return tmat, sdist, dist_threshold
 
+def transition_matrixs(time_series_set, shapelets, seg_length, tflag, multi_graph,
+                      percentile, threshold, tanh, debug, init, warp, measurement, 
+                      global_flag, cutpoints=[]):
+    """
+    compute shapelet transition matrix.
+    """
+    num_shapelet = len(shapelets)
+    num_segment = int(time_series_set.shape[1] / seg_length)
+    if cutpoints==[]:
+        cutpoints=[(0,num_segment)]
+    results = []
+    for start, end in cutpoints:
+        start, end = int(start*seg_length), int(end*seg_length)
+        num_segment = int((end-start) / seg_length)
+        if multi_graph:
+            gcnt = num_segment - 1
+        else:
+            gcnt = 1
+        Debugger.info_print(f"weight matrix between shapelet {start} {end}")
+        Debugger.info_print(str(time_series_set[:, start:end].shape))
+        tmat, sdist, dist_threshold = compute_sub_transition_matrix(
+            time_series_set[:, start:end], shapelets, seg_length, tflag, multi_graph, 
+            percentile, threshold, tanh, debug, init, warp, measurement, global_flag, 
+            num_segment, gcnt)
+        results.append((tmat, sdist, dist_threshold))
+
+    return results
 def __mat2edgelist(tmat, fpath):
     """
     transform matrix to edge-list format that Deepwalk needs.

@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from .shapelet_utils import transition_matrix,transition_matrixs
 from .shapelet_utils import *
 embed_number = 5
 
@@ -82,6 +83,7 @@ class ShapeletEmbedding(object):
     """
     def __init__(self, seg_length, tflag, multi_graph, cache_dir,
                  percentile, tanh, debug, measurement, mode, global_flag,
+                #  cutpoints,
                  **deepwalk_args):
         """
         :param seg_length:
@@ -126,6 +128,7 @@ class ShapeletEmbedding(object):
         self.deepwalk_args = deepwalk_args
         self.embed_size = self.deepwalk_args.get('representation_size', 256)
         self.embeddings = None
+        self.cutpoints = deepwalk_args.get('cutpoints', [])
         Debugger.info_print('initialize ShapeletEmbedding model with ops: {}'.format(self.__dict__))
 
     def fit(self, time_series_set, shapelets, warp, init=0):
@@ -147,16 +150,25 @@ class ShapeletEmbedding(object):
         ##########
         # 接下來要改這邊
         ##########
-        tmat, sdist, dist_threshold = transition_matrix(
+        transition_set=transition_matrixs(
             time_series_set=time_series_set, shapelets=shapelets, seg_length=self.seg_length,
             tflag=self.tflag, multi_graph=self.multi_graph, tanh=self.tanh, debug=self.debug,
             init=init, warp=warp, percentile=self.percentile, threshold=self.dist_threshold,
-            measurement=self.measurement, global_flag=self.global_flag)
+            measurement=self.measurement, global_flag=self.global_flag,
+            cutpoints=self.cutpoints
+            )
+        
+        
+        tmat, sdist, dist_threshold = transition_set[0]
         self.dist_threshold = dist_threshold
         self.embeddings = graph_embedding(
             tmat=tmat, num_shapelet=len(shapelets), embed_size=self.embed_size,
             cache_dir=self.cache_dir, **self.deepwalk_args)
-
+        tmat, sdist, dist_threshold = transition_set[1]
+        self.dist_threshold = dist_threshold
+        self.embeddings = graph_embedding(
+            tmat=tmat, num_shapelet=len(shapelets), embed_size=self.embed_size,
+            cache_dir=self.cache_dir, **self.deepwalk_args)
     def time_series_embedding(self, time_series_set, shapelets, warp, init=0):
         """
         generate time series embeddings.

@@ -77,6 +77,12 @@ class Time2Graph(ModelUtils):
         self.feature_scaler = MinMaxScaler()
         self.feature_mode =kwargs.get('feature_mode', 'all')
         model_cache = kwargs.get('model_cache', None)
+        label_all=kwargs.get('label_all', "meal")
+        cutpoints=kwargs.get('cutpoints', [])
+        if label_all == "all":
+            self.label_all=True
+        else:
+            self.label_all=False
         self.verbose = kwargs.get('verbose', False)
         if model_cache is not None:
             self.load_model(fpath=model_cache)
@@ -85,7 +91,9 @@ class Time2Graph(ModelUtils):
             self.t2g = Time2GraphEmbed(kernel=kernel, K=K, C=C, seg_length=seg_length,
                                        opt_metric=opt_metric, warp=warp, tflag=tflag,
                                        gpu_enable=gpu_enable, percentile=percentile, mode=mode,
-                                       batch_size=batch_size, **kwargs)
+                                       batch_size=batch_size, 
+                                    #    cutpoints=cutpoints,
+                                       **kwargs)
             if path.isfile(self.shapelets_cache):
                 self.t2g.load_shapelets(fpath=self.shapelets_cache)
             self.fm = FeatureModel(seg_length=self.t2g.seg_length, kernel=kernel)
@@ -160,6 +168,7 @@ class Time2Graph(ModelUtils):
                     data_size=self.data_size, num_batch=int(X.shape[0] // self.batch_size))
             self.t2g.save_shapelets(fpath=self.shapelets_cache)
             Debugger.info_print('saving shapelets cache to {}'.format(self.shapelets_cache))
+
         Debugger.info_print('embedding_model')
         Debugger.info_print('t2g = Time2GraphEmbed')
         if self.t2g.sembeds is None:
@@ -186,7 +195,17 @@ class Time2Graph(ModelUtils):
                 self.clf.set_params(**args)
                 skf = StratifiedKFold(n_splits=n_splits, shuffle=True)
                 tmp = np.zeros(5, dtype=np.float32).reshape(-1)
-                measure_vector = [metric_measure, accuracy_score, precision_score, recall_score, f1_score]
+                # measure_vector = [metric_measure, accuracy_score, precision_score, recall_score, f1_score]
+                if self.label_all:
+                    measure_vector = [
+                    lambda y_true, y_pred: metric_measure(y_true, y_pred, average='weighted'), 
+                    accuracy_score, 
+                    lambda y_true, y_pred: precision_score(y_true, y_pred, average='weighted'), 
+                    lambda y_true, y_pred: recall_score(y_true, y_pred, average='weighted'),
+                    lambda y_true, y_pred: f1_score(y_true, y_pred, average='weighted')
+                    ]
+                else:
+                    measure_vector = [metric_measure, accuracy_score, precision_score, recall_score, f1_score]
                 for train_idx, test_idx in skf.split(x, Y):
                     self.clf.fit(x[train_idx], Y[train_idx])
                     y_pred, y_true = self.clf.predict(x[test_idx]), Y[test_idx]
@@ -235,6 +254,7 @@ class Time2Graph(ModelUtils):
             predicted label, predicted probability.
         """
         x = self.extract_features(X=X, Z=Z,init=self.init,mode=self.feature_mode)
+        return self.clf.predict(x), None
         return self.clf.predict(x), self.clf.predict_proba(x)[:, 1]
 
     def save_model(self, fpath, **kwargs):

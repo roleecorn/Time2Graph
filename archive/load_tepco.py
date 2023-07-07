@@ -161,9 +161,9 @@ def load_house_dataset_by_houses_ex(TRAIN_HOUSE, TEST_HOUSE, assign_behavior):
     # Convert labels to start from 0
     lbs = np.unique(np.concatenate([y_train, y_test], axis=0))
     y_train_return, y_test_return = np.copy(y_train), np.copy(y_test)
-    # for idx, val in enumerate(lbs):
-    #     y_train_return[y_train == val] = idx
-    #     y_test_return[y_test == val] = idx
+    for idx, val in enumerate(lbs):
+        y_train_return[y_train == val] = idx
+        y_test_return[y_test == val] = idx
     x_train = to_25(x_train)
     x_test = to_25(x_test)
     Debugger.info_print('usr_dataset four return shape \n{}\n{}\n{}\n{}'.format( 
