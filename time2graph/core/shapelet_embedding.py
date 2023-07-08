@@ -205,22 +205,35 @@ class ShapeletEmbedding(object):
             self.fit(time_series_set=time_series_set, shapelets=shapelets, warp=warp)
         sdist=[]
         for start,end in self.cutpoints:
-            copy_shapelet=[ashape[start:end] for ashape in shapelets]
-            
-            sdist.append(shapelet_distance(time_series_set=time_series_set,
-                # time_series_set=time_series_set[:, start*self.seg_length:end*self.seg_length], 
-                                           shapelets=shapelets,
-                                        # shapelets=copy_shapelet,
+            # copy_shapelet=[ashape[start:end] for ashape in shapelets]
+            copy_shapelet=[]
+            for pattern, local_factor, global_factor,loss in shapelets:
+                copy_shapelet.append((
+                    pattern[start:end],
+                    local_factor[start:end],
+                    global_factor[start:end],
+                    loss))
+            # for i in copy_shapelet:
+            #     print("-------------------------")
+            #     print(i)
+            #     print("-------------------------")
+            # import sys
+            # sys.exit()
+            sdist.append(shapelet_distance(
+                # time_series_set=time_series_set,
+                time_series_set=time_series_set[:, start*self.seg_length:end*self.seg_length], 
+                                        #    shapelets=shapelets,
+                                        shapelets=copy_shapelet,
                                   seg_length=self.seg_length, tflag=self.tflag, tanh=self.tanh,
                                   debug=self.debug, init=init, warp=warp,
                                   measurement=self.measurement, global_flag=self.global_flag))
-            print("_-------------------------------")
         # sdist = shapelet_distance(time_series_set=time_series_set, shapelets=shapelets,
         #                           seg_length=self.seg_length, tflag=self.tflag, tanh=self.tanh,
         #                           debug=self.debug, init=init, warp=warp,
         #                           measurement=self.measurement, global_flag=self.global_flag)
         Debugger.info_print('embedding threshold {}'.format(self.dist_threshold))
-        # Debugger.info_print('sdist size {}'.format(sdist.shape))
+        for ddisti in sdist:
+            Debugger.info_print('sdist size {}'.format(ddisti.shape))
         parmap = []
         for i in range(len(self.cutpoints)):
             parmap.append(ParMap(
@@ -249,7 +262,7 @@ class ShapeletEmbedding(object):
             emb.append(np.array(
                 parmap[i].run(
                             data=list(sdist[i])), dtype=np.float32
-                            ).reshape(sdist[i].shape[0], size))
+                            ).reshape(sdist[i].shape[0], sdist[i].shape[1] * self.embed_size))
             
         combined = np.concatenate(emb, axis=1)
         return combined
