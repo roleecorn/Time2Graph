@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 from .shapelet_utils import transition_matrix,transition_matrixs
 from .shapelet_utils import *
+from scipy import interpolate
+
 embed_number = 5
 
 
@@ -127,7 +129,7 @@ class ShapeletEmbedding(object):
         self.global_flag = global_flag
         self.deepwalk_args = deepwalk_args
         self.embed_size = self.deepwalk_args.get('representation_size', 256)
-        self.embeddings = None
+        self.embeddings = []
         self.cutpoints = deepwalk_args.get('cutpoints', [])
         Debugger.info_print('initialize ShapeletEmbedding model with ops: {}'.format(self.__dict__))
 
@@ -158,17 +160,25 @@ class ShapeletEmbedding(object):
             cutpoints=self.cutpoints
             )
         
-        
-        tmat, sdist, dist_threshold = transition_set[0]
-        self.dist_threshold = dist_threshold
-        self.embeddings = graph_embedding(
-            tmat=tmat, num_shapelet=len(shapelets), embed_size=self.embed_size,
-            cache_dir=self.cache_dir, **self.deepwalk_args)
-        tmat, sdist, dist_threshold = transition_set[1]
-        self.dist_threshold = dist_threshold
-        self.embeddings = graph_embedding(
-            tmat=tmat, num_shapelet=len(shapelets), embed_size=self.embed_size,
-            cache_dir=self.cache_dir, **self.deepwalk_args)
+        for transition in transition_set:
+            tmat, sdist, dist_threshold = transition
+            self.dist_threshold = dist_threshold
+            self.embeddings.append(
+                graph_embedding(
+                tmat=tmat, num_shapelet=len(shapelets), embed_size=self.embed_size,
+                cache_dir=self.cache_dir, **self.deepwalk_args)
+            )
+            
+        # tmat, sdist, dist_threshold = transition_set[0]
+        # self.dist_threshold = dist_threshold
+        # self.embeddings = graph_embedding(
+        #     tmat=tmat, num_shapelet=len(shapelets), embed_size=self.embed_size,
+        #     cache_dir=self.cache_dir, **self.deepwalk_args)
+        # tmat, sdist, dist_threshold = transition_set[1]
+        # self.dist_threshold = dist_threshold
+        # self.embeddings = graph_embedding(
+        #     tmat=tmat, num_shapelet=len(shapelets), embed_size=self.embed_size,
+        #     cache_dir=self.cache_dir, **self.deepwalk_args)
     def time_series_embedding(self, time_series_set, shapelets, warp, init=0):
         """
         generate time series embeddings.
@@ -182,25 +192,65 @@ class ShapeletEmbedding(object):
             init index of time series. default 0.
         :return:
         """
+        print("----------------------------")
+        print(type(shapelets))
+        print(len(shapelets))
+        print(type(shapelets[0]))
+        print(len(shapelets[0]))
+        print(type(shapelets[0][0]))
+        print(len(shapelets[0][0]))
+        print(type(shapelets[0][0][0]))
+        print(len(shapelets[0][0][0]))
         if self.embeddings is None:
             self.fit(time_series_set=time_series_set, shapelets=shapelets, warp=warp)
-        sdist = shapelet_distance(time_series_set=time_series_set, shapelets=shapelets,
+        sdist=[]
+        for start,end in self.cutpoints:
+            copy_shapelet=[ashape[start:end] for ashape in shapelets]
+            
+            sdist.append(shapelet_distance(time_series_set=time_series_set,
+                # time_series_set=time_series_set[:, start*self.seg_length:end*self.seg_length], 
+                                           shapelets=shapelets,
+                                        # shapelets=copy_shapelet,
                                   seg_length=self.seg_length, tflag=self.tflag, tanh=self.tanh,
                                   debug=self.debug, init=init, warp=warp,
-                                  measurement=self.measurement, global_flag=self.global_flag)
+                                  measurement=self.measurement, global_flag=self.global_flag))
+            print("_-------------------------------")
+        # sdist = shapelet_distance(time_series_set=time_series_set, shapelets=shapelets,
+        #                           seg_length=self.seg_length, tflag=self.tflag, tanh=self.tanh,
+        #                           debug=self.debug, init=init, warp=warp,
+        #                           measurement=self.measurement, global_flag=self.global_flag)
         Debugger.info_print('embedding threshold {}'.format(self.dist_threshold))
-        Debugger.info_print('sdist size {}'.format(sdist.shape))
-        parmap = ParMap(
+        # Debugger.info_print('sdist size {}'.format(sdist.shape))
+        parmap = []
+        for i in range(len(self.cutpoints)):
+            parmap.append(ParMap(
             work=time_series_embeds_factory__(
-                embed_size=self.embed_size, embeddings=self.embeddings, threshold=self.dist_threshold,
+                embed_size=self.embed_size, embeddings=self.embeddings[i], threshold=self.dist_threshold,
                 multi_graph=self.multi_graph, debug=self.debug, mode=self.mode),
-            monitor=parallel_monitor(msg='time series embedding', size=sdist.shape[0], debug=self.debug),
+            monitor=parallel_monitor(msg='time series embedding', size=sdist[i].shape[0], debug=self.debug),
             njobs=NJOBS
-        )
+            ))
+        # parmap = ParMap(
+        #     work=time_series_embeds_factory__(
+        #         embed_size=self.embed_size, embeddings=self.embeddings[0], threshold=self.dist_threshold,
+        #         multi_graph=self.multi_graph, debug=self.debug, mode=self.mode),
+        #     monitor=parallel_monitor(msg='time series embedding', size=sdist.shape[0], debug=self.debug),
+        #     njobs=NJOBS
+        # )
+
         if self.mode == 'concate':
-            size = sdist.shape[1] * self.embed_size * embed_number
+            size = sdist[0].shape[1] * self.embed_size * embed_number
         elif self.mode == 'aggregate':
-            size = sdist.shape[1] * self.embed_size
+            size = sdist[0].shape[1] * self.embed_size
         else:
             raise NotImplementedError('unsupported mode {}'.format(self.mode))
+        emb=[]
+        for i in range(len(self.cutpoints)):
+            emb.append(np.array(
+                parmap[i].run(
+                            data=list(sdist[i])), dtype=np.float32
+                            ).reshape(sdist[i].shape[0], size))
+            
+        combined = np.concatenate(emb, axis=1)
+        return combined
         return np.array(parmap.run(data=list(sdist)), dtype=np.float32).reshape(sdist.shape[0], size)

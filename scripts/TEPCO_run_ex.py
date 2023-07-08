@@ -101,7 +101,6 @@ if __name__ == '__main__':
     x_train, y_train, x_test, y_test,z_train,z_test = load_house_dataset_by_houses_ex(
         TEST_HOUSE=testhouse,TRAIN_HOUSE=trainhouse,assign_behavior=args.behav)
 
-
     Debugger.info_print('training: {:.2f} positive ratio with {}'.format(float(sum(y_train) / len(y_train)),
                                                                          len(y_train)))
     Debugger.info_print('test: {:.2f} positive ratio with {}'.format(float(sum(y_test) / len(y_test)),
@@ -146,7 +145,8 @@ if __name__ == '__main__':
                 f1_score(y_true=y_test, y_pred=y_pred, average='micro')
             ))
     else:
-        Debugger.info_print('result: accu {:.4f}, prec {:.4f}, recall {:.4f}, f1 {:.4f}'.format(
+        Debugger.dc_print('{}:{}\nresult: accu {:.4f}, prec {:.4f}, recall {:.4f}, f1 {:.4f}'.format(
+            args.behav,args.kernel,
             accuracy_score(y_true=y_test, y_pred=y_pred),
             precision_score(y_true=y_test, y_pred=y_pred),
             recall_score(y_true=y_test, y_pred=y_pred),
@@ -154,8 +154,8 @@ if __name__ == '__main__':
         ))
     if args.behav == 'all':
         with open('TEPCO_ex_result.csv',mode='a+') as f:
-            f.write('{},{:.4f},{:.4f},{:.4f},{:.4f},{:.1f},{},{}\n'.format(
-                args.behav,
+            f.write('{},{},{:.4f},{:.4f},{:.4f},{:.4f},{:.1f},{},{}\n'.format(
+                args.behav,args.kernel,
                 accuracy_score(y_true=y_test, y_pred=y_pred),
                 precision_score(y_true=y_test, y_pred=y_pred, average='micro'),
                 recall_score(y_true=y_test, y_pred=y_pred, average='micro'),
