@@ -9,6 +9,7 @@ from time2graph.utils.base_utils import Debugger
 from time2graph.core.model_TEPCO import Time2Graph
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 import time
+from imblearn.under_sampling import RandomUnderSampler
 testhouse = [str(i).zfill(3) for i in TEST_HOUSE]
 trainhouse = [str(i).zfill(3) for i in TRAIN_HOUSE]
 """
@@ -91,8 +92,10 @@ if __name__ == '__main__':
                         help='what feature want use in classification')
     parser.add_argument('--behav', type=str, default='out', 
                         help='which to classify')
+    parser.add_argument('--resample', action='store_true', default=False,
+                        help='whether resample')
     args = parser.parse_args()
-    args.dataset ='001'
+    args.dataset = args.behav
     Debugger.info_print('running with {}'.format(args.__dict__))
 
 
@@ -100,11 +103,22 @@ if __name__ == '__main__':
     #     fname='001', length=args.seg_length * args.num_segment)
     x_train, y_train, x_test, y_test,z_train,z_test = load_house_dataset_by_houses_ex(
         TEST_HOUSE=testhouse,TRAIN_HOUSE=trainhouse,assign_behavior=args.behav)
-
+    if args.resample and float(sum(y_train) / len(y_train))<0.2:
+        Debugger.info_print('resample')
+        x_train_flattened = x_train.reshape(x_train.shape[0], -1)
+        positive_ratio = 0.2
+        n_negative = int(len(y_train[y_train==1]) / positive_ratio - len(y_train[y_train==1]))
+        rus = RandomUnderSampler(sampling_strategy={0: n_negative, 1: len(y_train[y_train==1])}, random_state=42)
+        x_train_res_flattened, y_train = rus.fit_resample(x_train_flattened, y_train)
+        x_train = x_train_res_flattened.reshape(-1, x_train.shape[1], x_train.shape[2])
     Debugger.info_print('training: {:.2f} positive ratio with {}'.format(float(sum(y_train) / len(y_train)),
                                                                          len(y_train)))
+    # cutpoints=[(0,2),(1,4),(3,5)]
+    # cutpoints =[(0,3),(2,5)]
+    cutpoints =[(0,5)]
     Debugger.info_print('test: {:.2f} positive ratio with {}'.format(float(sum(y_test) / len(y_test)),
                                                                      len(y_test)))
+
     m = Time2Graph(kernel=args.kernel, K=args.K, C=args.C, seg_length=args.seg_length,
                    opt_metric=args.opt_metric, init=args.init, gpu_enable=args.gpu_enable,
                    warp=args.warp, tflag=args.tflag, mode=args.embed,
@@ -121,7 +135,7 @@ if __name__ == '__main__':
                        args.cmethod, args.K, args.seg_length),
                        feature_mode = args.feature,
                        label_all = args.behav,
-                       cutpoints=[(0,2),(1,4),(3,5)],
+                       cutpoints=cutpoints,
                    )
     Debugger.info_print('shapelets_cache={}/scripts/cache/{}_{}_{}_{}_shapelets.cache'.format(
                        module_path, args.dataset, args.cmethod, args.K, args.seg_length)
@@ -131,8 +145,14 @@ if __name__ == '__main__':
     cache_dir = '{}/scripts/cache/{}/'.format(module_path, args.dataset)
     if not path.isdir(cache_dir):
         os.mkdir(cache_dir)
-    cutpoints=[(0,2),(1,4),(3,5)]
-    m.fit(X=x_train, Y=y_train,Z=z_train, cache_dir=cache_dir, n_splits=args.n_splits)
+    m.fit(X=x_train, Y=y_train,Z=z_train, cache_dir=cache_dir, n_splits=args.n_splits,
+          tuning =False,
+          opt_args= {
+                    'max_depth': 16,
+                    'learning_rate': 0.2,
+                    'scale_pos_weight': 1,
+                    'booster': 'gbtree'
+                })
     if args.cache:
         m.save_model(fpath='{}/scripts/cache/{}_embedding_t2g_model.cache'.format(module_path, args.dataset))
     Debugger.info_print('only predict label not probility')
@@ -153,7 +173,7 @@ if __name__ == '__main__':
             f1_score(y_true=y_test, y_pred=y_pred)
         ))
     if args.behav == 'all':
-        with open('TEPCO_ex_result.csv',mode='a+') as f:
+        with open('TEPCO_resample_result.csv',mode='a+') as f:
             f.write('{},{},{:.4f},{:.4f},{:.4f},{:.4f},{:.1f},{},{}\n'.format(
                 args.behav,args.kernel,
                 accuracy_score(y_true=y_test, y_pred=y_pred),
@@ -176,7 +196,7 @@ if __name__ == '__main__':
                 f.write("Class {}: Precision: {:.4f}, Recall: {:.4f}, F1: {:.4f}\n".format(
                     label_class, precision, recall, f1))
     else:
-        with open('TEPCO_ex_result.csv',mode='a+') as f:
+        with open('TEPCO_onlyft_result.csv',mode='a+') as f:
             f.write('{},{},{:.4f},{:.4f},{:.4f},{:.4f},{:.1f},{},{}\n'.format(
                 args.behav,args.kernel,
                 accuracy_score(y_true=y_test, y_pred=y_pred),

@@ -1,6 +1,0 @@
-{'C': 1, 'kernel': 'sigmoid', 'class_weight': 'balanced'}
-{'C': 2, 'kernel': 'rbf', 'class_weight': 'balanced'}
-{'C': 0.25, 'kernel': 'rbf', 'class_weight': 'balanced'}
-{'C': 2, 'kernel': 'rbf', 'class_weight': 'balanced'}
-{'C': 0.25, 'kernel': 'poly', 'class_weight': 'balanced'}
-{'C': 2, 'kernel': 'poly', 'class_weight': 'balanced'}

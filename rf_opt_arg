@@ -1,6 +1,0 @@
-{'criterion': 'gini', 'max_features': 'auto', 'max_depth': 50, 'min_samples_split': 2, 'min_samples_leaf': 1, 'class_weight': 'balanced'}
-{'criterion': 'entropy', 'max_features': 'auto', 'max_depth': 25, 'min_samples_split': 8, 'min_samples_leaf': 1, 'class_weight': 'balanced'}
-{'criterion': 'gini', 'max_features': 'auto', 'max_depth': 50, 'min_samples_split': 8, 'min_samples_leaf': 1, 'class_weight': 'balanced'}
-{'criterion': 'entropy', 'max_features': None, 'max_depth': 50, 'min_samples_split': 8, 'min_samples_leaf': 1, 'class_weight': 'balanced'}
-{'criterion': 'entropy', 'max_features': 'auto', 'max_depth': 50, 'min_samples_split': 2, 'min_samples_leaf': 1, 'class_weight': 'balanced'}
-{'criterion': 'gini', 'max_features': None, 'max_depth': 50, 'min_samples_split': 2, 'min_samples_leaf': 1, 'class_weight': 'balanced'}

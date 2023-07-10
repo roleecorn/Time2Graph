@@ -192,15 +192,7 @@ class ShapeletEmbedding(object):
             init index of time series. default 0.
         :return:
         """
-        print("----------------------------")
-        print(type(shapelets))
-        print(len(shapelets))
-        print(type(shapelets[0]))
-        print(len(shapelets[0]))
-        print(type(shapelets[0][0]))
-        print(len(shapelets[0][0]))
-        print(type(shapelets[0][0][0]))
-        print(len(shapelets[0][0][0]))
+
         if self.embeddings is None:
             self.fit(time_series_set=time_series_set, shapelets=shapelets, warp=warp)
         sdist=[]
@@ -213,12 +205,6 @@ class ShapeletEmbedding(object):
                     local_factor[start:end],
                     global_factor[start:end],
                     loss))
-            # for i in copy_shapelet:
-            #     print("-------------------------")
-            #     print(i)
-            #     print("-------------------------")
-            # import sys
-            # sys.exit()
             sdist.append(shapelet_distance(
                 # time_series_set=time_series_set,
                 time_series_set=time_series_set[:, start*self.seg_length:end*self.seg_length], 

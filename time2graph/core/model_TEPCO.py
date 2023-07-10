@@ -125,9 +125,10 @@ class Time2Graph(ModelUtils):
                 feat = self.feature_scaler.transform(X=feat)
         Z = Z.reshape(-1, 1)
         if mode == 'all':
-            return np.concatenate((embed, feat,Z), axis=1)
+            return np.concatenate((embed, feat), axis=1)
         elif mode == 'feat':
-            return feat
+            return np.concatenate(( feat,Z), axis=1)
+            # return feat
         elif mode =='embed':
             return embed
         else:
@@ -187,8 +188,8 @@ class Time2Graph(ModelUtils):
 
         ###################################################
         # fine-tuning to find optimal classifier parameters
-        Debugger.info_print('optimal classifier parameters')
         if tuning:
+            Debugger.info_print('optimal classifier parameters')
             # 透過交叉驗證和網格搜索來找出最佳的模型參數組合
             arguments = self.clf_paras(balanced=balanced)
             for args in arguments:
@@ -228,6 +229,7 @@ class Time2Graph(ModelUtils):
         # load optimal parameters predefined before.
         else:
             assert opt_args is not None, 'missing opt args specified'
+            Debugger.info_print('using setup parameters')
             self.clf.set_params(**opt_args)
             skf = StratifiedKFold(n_splits=n_splits, shuffle=True)
             tmp = np.zeros(5, dtype=np.float32).reshape(-1)

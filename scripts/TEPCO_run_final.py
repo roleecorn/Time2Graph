@@ -3,11 +3,17 @@ import argparse
 import warnings
 import os
 from config import *
-from archive.load_usr_dataset import load_usr_dataset_by_name
+from houses import TEST_HOUSE,TRAIN_HOUSE
+from archive.load_tepco import load_house_dataset_by_houses,load_house_dataset_by_houses_ex
 from time2graph.utils.base_utils import Debugger
-from time2graph.core.model import Time2Graph
+from time2graph.core.model_TEPCO import Time2Graph
+from sklearn.model_selection import StratifiedKFold
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
-MISS_HOUSE=[0,49, 48, 40, 50, 41, 44, 46, 43, 4, 42, 47, 45,75]
+import time
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import LSTM, Dense
+testhouse = [str(i).zfill(3) for i in TEST_HOUSE]
+trainhouse = [str(i).zfill(3) for i in TRAIN_HOUSE]
 """
     scripts for running test.
     running command:
@@ -44,12 +50,11 @@ MISS_HOUSE=[0,49, 48, 40, 50, 41, 44, 46, 43, 4, 42, 47, 45,75]
 """
 
 if __name__ == '__main__':
+    start =time.time()
     warnings.filterwarnings(module='sklearn*', action='ignore', category=DeprecationWarning)
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('--dataset', type=str, default='ucr-Earthquakes',
-                        help='ucr-Earthquakes/WormsTwoClass/Strawberry')
     parser.add_argument('--K', type=int, default=100, help='number of shapelets extracted')
-    parser.add_argument('--C', type=int, default=800, help='number of shapelet candidates')
+    parser.add_argument('--C', type=int, default=200, help='number of shapelet candidates')
     parser.add_argument('--n_splits', type=int, default=5, help='number of splits in cross-validation')
     parser.add_argument('--num_segment', type=int, default=12, help='number of segment a time series is divided into')
     parser.add_argument('--seg_length', type=int, default=30, help='segment length')
@@ -60,7 +65,8 @@ if __name__ == '__main__':
     parser.add_argument('--beta', type=float, default=0.05, help='penalty parameter of global timing factor')
     parser.add_argument('--init', type=int, default=0, help='init index of time series data')
     parser.add_argument('--gpu_enable', action='store_true', default=False, help='bool, whether to use GPU')
-    parser.add_argument('--opt_metric', type=str, default='accuracy', help='which metric to optimize in prediction')
+    parser.add_argument('--opt_metric', type=str, default='accuracy', 
+                        help='which metric to optimize in prediction,accuracy,precision,recall,f1')
     parser.add_argument('--cache', action='store_true', default=False, help='whether to dump model to local file')
     parser.add_argument('--embed', type=str, default='aggregate',
                         help='which embed strategy to use (aggregate/concatenate)')
@@ -86,29 +92,26 @@ if __name__ == '__main__':
                         help='whether a multi graph')
     parser.add_argument('--feature', type=str, default='all', 
                         help='what feature want use in classification')
-    parser.add_argument("--var", type=str, required=True, help="A list of values separated by a comma")
+    parser.add_argument('--behav', type=str, default='out', 
+                        help='which to classify')
     args = parser.parse_args()
-    args.var = args.var.split("-")
-    for i in range(len(args.var)):
-        tmp = args.var[i].split("+")
-        args.var[i]=(int(tmp[0]),int(tmp[1]))
+    args.dataset = args.behav
     Debugger.info_print('running with {}'.format(args.__dict__))
-    if args.dataset.startswith('ucr'):
-        dataset = args.dataset.rstrip('\n\r').split('-')[-1]
-        x_train, y_train, x_test, y_test = load_usr_dataset_by_name(
-            fname=dataset, length=args.seg_length * args.num_segment)
-        print(x_train.shape)
-        # print(y_test)
-    else:
-        raise NotImplementedError()
-    # import sys
-    # sys.exit()
+
+
+    # x_train, y_train, x_test, y_test = load_house_dataset_by_name(
+    #     fname='001', length=args.seg_length * args.num_segment)
+    x_train, y_train, x_test, y_test,z_train,z_test = load_house_dataset_by_houses_ex(
+        TEST_HOUSE=testhouse,TRAIN_HOUSE=trainhouse,assign_behavior=args.behav)
+
     Debugger.info_print('training: {:.2f} positive ratio with {}'.format(float(sum(y_train) / len(y_train)),
                                                                          len(y_train)))
+    # cutpoints=[(0,2),(1,4),(3,5)]
+    # cutpoints =[(0,3),(2,5)]
+    cutpoints =[(0,5)]
     Debugger.info_print('test: {:.2f} positive ratio with {}'.format(float(sum(y_test) / len(y_test)),
-                                                          len(y_test)))
-    cutpoints=args.var
-    print(cutpoints)
+                                                                     len(y_test)))
+
     m = Time2Graph(kernel=args.kernel, K=args.K, C=args.C, seg_length=args.seg_length,
                    opt_metric=args.opt_metric, init=args.init, gpu_enable=args.gpu_enable,
                    warp=args.warp, tflag=args.tflag, mode=args.embed,
@@ -120,16 +123,12 @@ if __name__ == '__main__':
                    scaled=args.scaled, norm=args.norm, global_flag=args.no_global,
                    multi_graph=args.multi_graph,
                    shapelets_cache='{}/scripts/cache/{}_{}_{}_{}_shapelets.cache'.format(
-                       module_path, args.dataset, args.cmethod, args.K, args.seg_length),
+                       module_path, 
+                       args.dataset, 
+                       args.cmethod, args.K, args.seg_length),
                        feature_mode = args.feature,
+                       label_all = args.behav,
                        cutpoints=cutpoints,
-                       optargs= {
-                            'max_depth': 16,
-                            'learning_rate': 0.2,
-                            'scale_pos_weight': 1,
-                            'booster': 'gbtree'
-                        },
-                        tuning=False,
                    )
     Debugger.info_print('shapelets_cache={}/scripts/cache/{}_{}_{}_{}_shapelets.cache'.format(
                        module_path, args.dataset, args.cmethod, args.K, args.seg_length)
@@ -139,34 +138,95 @@ if __name__ == '__main__':
     cache_dir = '{}/scripts/cache/{}/'.format(module_path, args.dataset)
     if not path.isdir(cache_dir):
         os.mkdir(cache_dir)
-    m.fit(X=x_train, Y=y_train, cache_dir=cache_dir, n_splits=args.n_splits,
+    if m.t2g.shapelets is None:
+        m.t2g.learn_shapelets(
+            x=x_train, y=y_train, num_segment=int(x_train.shape[1] / m.seg_length),
+            data_size=m.data_size, num_batch=int(x_train.shape[0] // m.batch_size))
+        m.t2g.save_shapelets(fpath=m.shapelets_cache)
+        Debugger.info_print('saving shapelets cache to {}'.format(m.shapelets_cache))
+    if m.t2g.sembeds is None:
+        Debugger.info_print('training embedding model...')
+        m.t2g.fit_embedding_model(x=x_train, y = np.zeros_like(x_train), cache_dir=cache_dir)
+    tuning, opt_args = True,  {
+                    'max_depth': 16,
+                    'learning_rate': 0.2,
+                    'scale_pos_weight': 1,
+                    'booster': 'gbtree'
+                }
+    assert opt_args is not None, 'missing opt args specified'
+    Debugger.info_print('using setup parameters')
+    m.clf.set_params(**opt_args)
+    skf = StratifiedKFold(n_splits=5, shuffle=True)
+    tmp = np.zeros(5, dtype=np.float32).reshape(-1)
+    measure_vector = [accuracy_score, accuracy_score, precision_score, recall_score, f1_score]
+    for train_idx, test_idx in skf.split(x_train, y_train):
+        m.clf.fit(x_train[train_idx], y_train[train_idx])
+        y_pred, y_true = m.clf.predict(x_train[test_idx]), y_train[test_idx]
+        for k in range(5):
+            tmp[k] += measure_vector[k](y_true=y_true, y_pred=y_pred)
+    tmp /= 5
+    if m.verbose:
+        Debugger.info_print('args {} for clf {}, performance: {:.4f}, {:.4f}, {:.4f}, {:.4f}'.format(
+            opt_args, m.kernel, tmp[1], tmp[2], tmp[3], tmp[4]))
+    m.fit(X=x_train, Y=y_train,Z=z_train, cache_dir=cache_dir, n_splits=args.n_splits,
           tuning =False,
           opt_args= {
-        'max_depth': 8,
-        'learning_rate': 0.2,
-        'scale_pos_weight': 1,
-        'booster': 'gbtree'
-    })
+                    'max_depth': 16,
+                    'learning_rate': 0.2,
+                    'scale_pos_weight': 1,
+                    'booster': 'gbtree'
+                })
     if args.cache:
         m.save_model(fpath='{}/scripts/cache/{}_embedding_t2g_model.cache'.format(module_path, args.dataset))
     Debugger.info_print('only predict label not probility')
-    y_pred = m.predict(X=x_test)[0]
-    
-    Debugger.dc_print('{}\n{:.2f} positive ratio\nresult: accu {:.4f}, prec {:.4f}, recall {:.4f}, f1 {:.4f}'.format(
-        args.var,float(sum(y_train) / len(y_train)),
-                                                                                              
+    y_pred = m.predict(X=x_test,Z=z_test)[0]
+    if args.behav == 'all':
+        Debugger.info_print('result: accu {:.4f}, prec {:.4f}, recall {:.4f}, f1 {:.4f}'.format(
+                accuracy_score(y_true=y_test, y_pred=y_pred),
+                precision_score(y_true=y_test, y_pred=y_pred, average='micro'),
+                recall_score(y_true=y_test, y_pred=y_pred, average='micro'),
+                f1_score(y_true=y_test, y_pred=y_pred, average='micro')
+            ))
+    else:
+        Debugger.dc_print('{}:{}\nresult: accu {:.4f}, prec {:.4f}, recall {:.4f}, f1 {:.4f}'.format(
+            args.behav,args.kernel,
             accuracy_score(y_true=y_test, y_pred=y_pred),
             precision_score(y_true=y_test, y_pred=y_pred),
             recall_score(y_true=y_test, y_pred=y_pred),
             f1_score(y_true=y_test, y_pred=y_pred)
         ))
-    Debugger.dc_print('improve {}'.format(
-        precision_score(y_true=y_test, y_pred=y_pred)-sum(y_train) / len(y_train)))
-    with open(f'{args.feature}_result.csv',mode='a+') as f:
-        f.write('{},{:.4f},{:.4f},{:.4f},{:.4f}\n'.format(
-            dataset,
-            accuracy_score(y_true=y_test, y_pred=y_pred),
-            precision_score(y_true=y_test, y_pred=y_pred),
-            recall_score(y_true=y_test, y_pred=y_pred),
-            f1_score(y_true=y_test, y_pred=y_pred)
-        ))
+    if args.behav == 'all':
+        with open('TEPCO_ex_result.csv',mode='a+') as f:
+            f.write('{},{},{:.4f},{:.4f},{:.4f},{:.4f},{:.1f},{},{}\n'.format(
+                args.behav,args.kernel,
+                accuracy_score(y_true=y_test, y_pred=y_pred),
+                precision_score(y_true=y_test, y_pred=y_pred, average='micro'),
+                recall_score(y_true=y_test, y_pred=y_pred, average='micro'),
+                f1_score(y_true=y_test, y_pred=y_pred, average='micro'),
+                time.time()-start,
+                args.K,
+                args.C,
+            ))
+        # 將每個類別視為二元問題計算指標
+            for label_class in np.unique(y_test):
+                binary_y_true = np.where(y_test == label_class, 1, 0)
+                binary_y_pred = np.where(y_pred == label_class, 1, 0)
+                precision = precision_score(y_true=binary_y_true, y_pred=binary_y_pred)
+                recall = recall_score(y_true=binary_y_true, y_pred=binary_y_pred)
+                f1 = f1_score(y_true=binary_y_true, y_pred=binary_y_pred)
+                print("Class {}: Precision: {:.4f}, Recall: {:.4f}, F1: {:.4f}".format(
+                    label_class, precision, recall, f1))
+                f.write("Class {}: Precision: {:.4f}, Recall: {:.4f}, F1: {:.4f}\n".format(
+                    label_class, precision, recall, f1))
+    else:
+        with open('TEPCO_onlyft_result.csv',mode='a+') as f:
+            f.write('{},{},{:.4f},{:.4f},{:.4f},{:.4f},{:.1f},{},{}\n'.format(
+                args.behav,args.kernel,
+                accuracy_score(y_true=y_test, y_pred=y_pred),
+                precision_score(y_true=y_test, y_pred=y_pred),
+                recall_score(y_true=y_test, y_pred=y_pred),
+                f1_score(y_true=y_test, y_pred=y_pred),
+                time.time()-start,
+                args.K,
+                args.C,
+            ))

@@ -4,7 +4,7 @@ import time
 import itertools
 import psutil
 from subprocess import *
-
+import requests,json
 
 class ModelUtils(object):
     """
@@ -82,9 +82,13 @@ class ModelUtils(object):
         elif self.kernel == 'rf' or self.kernel == 'dts':
             criteria = self.kwargs.get('criteria', ['gini', 'entropy'])
             max_features = self.kwargs.get('max_feature', ['auto', 'log2',  None])
+            # max_features = self.kwargs.get('max_feature', ['auto'])
             max_depth = self.kwargs.get('max_depth', [10, 25, 50])
+            # max_depth = self.kwargs.get('max_depth', [10, 50])
+            # min_samples_split = self.kwargs.get('max_split', [2, 8])
             min_samples_split = self.kwargs.get('max_split', [2, 4, 8])
             min_samples_leaf = self.kwargs.get('min_leaf', [1, 3, 5])
+            # 2*3*3*3*3
             for (p1, p2, p3, p4, p5) in itertools.product(
                     criteria, max_features, max_depth, min_samples_split, min_samples_leaf
             ):
@@ -102,6 +106,7 @@ class ModelUtils(object):
             n_jobs = [self.kwargs.get('n_jobs', psutil.cpu_count())]
             class_weight = self.kwargs.get('class_weight', [1, 10, 50, 100])
             booster = self.kwargs.get('booster', ['gblinear', 'gbtree', 'dart'])
+            # 6*3*4*3
             for (p1, p2, p3, p4, p5) in itertools.product(
                     max_depth, learning_rate, booster, n_jobs, class_weight
             ):
@@ -225,6 +230,20 @@ class Debugger(object):
         if profiling:
             assert isinstance(begin, type(time.time())), 'invalid begin time {}'.format(begin)
             print('[info]{}, elapsed for {:.2f}s'.format(msg, time.time() - begin))
+    @staticmethod
+    def dc_print(msg, debug=True):
+        data = {
+            'content': msg
+        }
+        headers = {
+            'Content-Type': 'application/json'
+        }
+        response = requests.post('https://discord.com/api/webhooks/1126865128940388505/C4a70_4-uZxu_u6uhJsCGjnaP8XXAWmJPXbkwRFx8dr7OcI9TUoVRBUaiVpsbpkkCOgk',
+                                  data=json.dumps(data), headers=headers)
+        if response.status_code == 204:
+            print("訊息已成功發送到Discord Webhook！")
+        else:
+            print("發送訊息到Discord Webhook時出現錯誤！")
 
 
 class Queue:
