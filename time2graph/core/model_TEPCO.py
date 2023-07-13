@@ -127,7 +127,7 @@ class Time2Graph(ModelUtils):
         if mode == 'all':
             return np.concatenate((embed, feat), axis=1)
         elif mode == 'feat':
-            return np.concatenate(( feat,Z), axis=1)
+            return feat
             # return feat
         elif mode =='embed':
             return embed

@@ -94,8 +94,14 @@ if __name__ == '__main__':
                         help='which to classify')
     parser.add_argument('--resample', action='store_true', default=False,
                         help='whether resample')
+    parser.add_argument("--var", type=str, required=True, help="A list of values separated by a comma")
+
     args = parser.parse_args()
     args.dataset = args.behav
+    args.var = args.var.split("-")
+    for i in range(len(args.var)):
+        tmp = args.var[i].split("+")
+        args.var[i]=(int(tmp[0]),int(tmp[1]))
     Debugger.info_print('running with {}'.format(args.__dict__))
 
 
@@ -113,9 +119,6 @@ if __name__ == '__main__':
         x_train = x_train_res_flattened.reshape(-1, x_train.shape[1], x_train.shape[2])
     Debugger.info_print('training: {:.2f} positive ratio with {}'.format(float(sum(y_train) / len(y_train)),
                                                                          len(y_train)))
-    # cutpoints=[(0,2),(1,4),(3,5)]
-    # cutpoints =[(0,3),(2,5)]
-    cutpoints =[(0,5)]
     Debugger.info_print('test: {:.2f} positive ratio with {}'.format(float(sum(y_test) / len(y_test)),
                                                                      len(y_test)))
 
@@ -135,7 +138,7 @@ if __name__ == '__main__':
                        args.cmethod, args.K, args.seg_length),
                        feature_mode = args.feature,
                        label_all = args.behav,
-                       cutpoints=cutpoints,
+                       cutpoints=args.var,
                    )
     Debugger.info_print('shapelets_cache={}/scripts/cache/{}_{}_{}_{}_shapelets.cache'.format(
                        module_path, args.dataset, args.cmethod, args.K, args.seg_length)
@@ -145,65 +148,53 @@ if __name__ == '__main__':
     cache_dir = '{}/scripts/cache/{}/'.format(module_path, args.dataset)
     if not path.isdir(cache_dir):
         os.mkdir(cache_dir)
-    m.fit(X=x_train, Y=y_train,Z=z_train, cache_dir=cache_dir, n_splits=args.n_splits,
-          tuning =False,
-          opt_args= {
+
+    if args.kernel=='xgb':
+        opt_args= {
                     'max_depth': 16,
                     'learning_rate': 0.2,
                     'scale_pos_weight': 1,
                     'booster': 'gbtree'
-                })
+                }
+    elif (args.kernel=='dts') or (args.kernel=='rf'):
+        opt_args={
+                    'criterion': 'gini',
+                    'max_features': 'auto',
+                    'max_depth': 10,
+                    'min_samples_split': 4,
+                    'min_samples_leaf': 3,
+                    'class_weight': 'balanced'
+                }
+    else:
+        raise ValueError("please choose a classifier")
+    m.fit(X=x_train, Y=y_train,Z=z_train, cache_dir=cache_dir, n_splits=args.n_splits,
+          tuning =False,
+          opt_args= opt_args)
     if args.cache:
         m.save_model(fpath='{}/scripts/cache/{}_embedding_t2g_model.cache'.format(module_path, args.dataset))
     Debugger.info_print('only predict label not probility')
     y_pred = m.predict(X=x_test,Z=z_test)[0]
-    if args.behav == 'all':
-        Debugger.info_print('result: accu {:.4f}, prec {:.4f}, recall {:.4f}, f1 {:.4f}'.format(
-                accuracy_score(y_true=y_test, y_pred=y_pred),
-                precision_score(y_true=y_test, y_pred=y_pred, average='micro'),
-                recall_score(y_true=y_test, y_pred=y_pred, average='micro'),
-                f1_score(y_true=y_test, y_pred=y_pred, average='micro')
-            ))
-    else:
-        Debugger.dc_print('{}:{}\nresult: accu {:.4f}, prec {:.4f}, recall {:.4f}, f1 {:.4f}'.format(
-            args.behav,args.kernel,
+
+    if args.var == [(0,5)]:
+        args.kernel = 'T2G'
+    else :
+        args.kernel ='T2G+'
+    Debugger.dc_print('{}\n{:.2f} positive ratio\nresult: accu {:.4f}, prec {:.4f}, recall {:.4f}, f1 {:.4f}'.format(
+        args.var,float(sum(y_test) / len(y_test)),                                                                           
             accuracy_score(y_true=y_test, y_pred=y_pred),
             precision_score(y_true=y_test, y_pred=y_pred),
             recall_score(y_true=y_test, y_pred=y_pred),
             f1_score(y_true=y_test, y_pred=y_pred)
         ))
-    if args.behav == 'all':
-        with open('TEPCO_resample_result.csv',mode='a+') as f:
-            f.write('{},{},{:.4f},{:.4f},{:.4f},{:.4f},{:.1f},{},{}\n'.format(
-                args.behav,args.kernel,
-                accuracy_score(y_true=y_test, y_pred=y_pred),
-                precision_score(y_true=y_test, y_pred=y_pred, average='micro'),
-                recall_score(y_true=y_test, y_pred=y_pred, average='micro'),
-                f1_score(y_true=y_test, y_pred=y_pred, average='micro'),
-                time.time()-start,
-                args.K,
-                args.C,
-            ))
-        # 將每個類別視為二元問題計算指標
-            for label_class in np.unique(y_test):
-                binary_y_true = np.where(y_test == label_class, 1, 0)
-                binary_y_pred = np.where(y_pred == label_class, 1, 0)
-                precision = precision_score(y_true=binary_y_true, y_pred=binary_y_pred)
-                recall = recall_score(y_true=binary_y_true, y_pred=binary_y_pred)
-                f1 = f1_score(y_true=binary_y_true, y_pred=binary_y_pred)
-                print("Class {}: Precision: {:.4f}, Recall: {:.4f}, F1: {:.4f}".format(
-                    label_class, precision, recall, f1))
-                f.write("Class {}: Precision: {:.4f}, Recall: {:.4f}, F1: {:.4f}\n".format(
-                    label_class, precision, recall, f1))
-    else:
-        with open('TEPCO_onlyft_result.csv',mode='a+') as f:
-            f.write('{},{},{:.4f},{:.4f},{:.4f},{:.4f},{:.1f},{},{}\n'.format(
-                args.behav,args.kernel,
-                accuracy_score(y_true=y_test, y_pred=y_pred),
-                precision_score(y_true=y_test, y_pred=y_pred),
-                recall_score(y_true=y_test, y_pred=y_pred),
-                f1_score(y_true=y_test, y_pred=y_pred),
-                time.time()-start,
-                args.K,
-                args.C,
-            ))
+    with open('ccc_result.csv',mode='a+') as f:
+        f.write('{},{},{:.4f},{:.4f},{:.4f},{:.4f},{:.1f},{},{}'.format(
+            args.behav,args.kernel,
+            accuracy_score(y_true=y_test, y_pred=y_pred),
+            precision_score(y_true=y_test, y_pred=y_pred),
+            recall_score(y_true=y_test, y_pred=y_pred),
+            f1_score(y_true=y_test, y_pred=y_pred),
+            time.time()-start,
+            args.K,
+            args.C,
+        ))
+        f.write(",\"{}\"\n".format(args.var))
