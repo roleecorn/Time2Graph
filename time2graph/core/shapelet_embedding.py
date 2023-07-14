@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from .shapelet_utils import transition_matrix,transition_matrixs
+from .shapelet_utils import transition_matrix,transition_matrixs,__mat2edgelist
 from .shapelet_utils import *
 from scipy import interpolate
 
@@ -150,7 +150,8 @@ class ShapeletEmbedding(object):
         # sdist是一個三維陣列（3D array），它儲存了時間序列與形狀矩陣之間的距離。
         # tmat 是表示轉移矩陣（Transition Matrix）的多維陣列。這個矩陣代表了不同形狀矩陣（shapelets）之間的轉移關係
         ##########
-        # 接下來要改這邊
+        # transition_set是一個list，裡面放置所有原本的transition
+        # 即，原本只會有一個transition
         ##########
         transition_set=transition_matrixs(
             time_series_set=time_series_set, shapelets=shapelets, seg_length=self.seg_length,
@@ -159,8 +160,22 @@ class ShapeletEmbedding(object):
             measurement=self.measurement, global_flag=self.global_flag,
             cutpoints=self.cutpoints
             )
-        
-        for transition in transition_set:
+        # trans_pattern_set= transition_between_pattern(
+        #     time_series_set=time_series_set,
+        #     shapelets=shapelets,
+        #     seg_length=self.seg_length,
+        #     tanh=self.tanh,
+        #     percentile=self.percentile,
+        #     measurement=self.measurement,
+        #     cutpoints=self.cutpoints
+        #                                           )
+        # combine_graph=combine(transition_set,trans_pattern_set)
+        # self.embeddings = graph_embedding(
+        #         tmat=combine_graph, num_shapelet=len(shapelets), embed_size=self.embed_size,
+        #         cache_dir=self.cache_dir, **self.deepwalk_args)
+            
+        #####修改embedding方法
+        for idx,transition in enumerate(transition_set):
             tmat, sdist, dist_threshold = transition
             self.dist_threshold = dist_threshold
             self.embeddings.append(
@@ -168,7 +183,9 @@ class ShapeletEmbedding(object):
                 tmat=tmat, num_shapelet=len(shapelets), embed_size=self.embed_size,
                 cache_dir=self.cache_dir, **self.deepwalk_args)
             )
-            
+            # edgepath ='{}/{}.edgelist'.format(self.cache_dir, idx)
+            # embedding_path = '{}/{}.embeddings'.format(self.cache_dir, idx)
+            # __mat2edgelist(tmat=tmat[0, :, :], fpath=edgepath)
         # tmat, sdist, dist_threshold = transition_set[0]
         # self.dist_threshold = dist_threshold
         # self.embeddings = graph_embedding(

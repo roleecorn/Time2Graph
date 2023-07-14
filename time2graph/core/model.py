@@ -143,7 +143,6 @@ class Time2Graph(ModelUtils):
                 the optimal parameters of outer-classifier should be pre-defined.
         """
         # fit data scaler
-        Debugger.info_print('scaler')
         for k in range(self.data_size):
             self.data_scaler[k].fit(X[:, :, k])
         X_scaled = np.zeros(X.shape, dtype=np.float)
@@ -162,7 +161,6 @@ class Time2Graph(ModelUtils):
             self.t2g.save_shapelets(fpath=self.shapelets_cache)
             Debugger.info_print('saving shapelets cache to {}'.format(self.shapelets_cache))
         Debugger.info_print('embedding_model')
-        Debugger.info_print('t2g = Time2GraphEmbed')
         if self.t2g.sembeds is None:
             Debugger.info_print('training embedding model...')
             if self.scaled:
@@ -224,7 +222,6 @@ class Time2Graph(ModelUtils):
             if self.verbose:
                 Debugger.info_print('args {} for clf {}, performance: {:.4f}, {:.4f}, {:.4f}, {:.4f}'.format(
                     opt_args, self.kernel, tmp[1], tmp[2], tmp[3], tmp[4]))
-        Debugger.info_print('classifier fit')
         self.clf.fit(x, Y)
 
     def predict(self, X, **kwargs):

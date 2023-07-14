@@ -92,9 +92,6 @@ def load_house_dataset_by_houses(TRAIN_HOUSE, TEST_HOUSE, assign_behavior):
     for idx, val in enumerate(lbs):
         y_train_return[y_train == val] = idx
         y_test_return[y_test == val] = idx
-
-    Debugger.info_print('usr_dataset four return shape \n{}\n{}\n{}\n{}'.format( 
-        x_train.shape,y_train_return.shape,x_test.shape,y_test_return.shape))
         
     return x_train, y_train_return, x_test, y_test_return,z_train,z_test 
 def load_house_dataset_by_houses_ex(TRAIN_HOUSE, TEST_HOUSE, assign_behavior):
@@ -169,8 +166,7 @@ def load_house_dataset_by_houses_ex(TRAIN_HOUSE, TEST_HOUSE, assign_behavior):
         y_test_return[y_test == val] = idx
     x_train = to_25(x_train)
     x_test = to_25(x_test)
-    Debugger.info_print('usr_dataset four return shape \n{}\n{}\n{}\n{}'.format( 
-        x_train.shape, y_train_return.shape, x_test.shape, y_test_return.shape))
+
 
     return x_train, y_train_return, x_test, y_test_return, z_train, z_test
 

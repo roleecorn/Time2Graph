@@ -396,7 +396,6 @@ def graph_embedding(tmat, num_shapelet, embed_size, cache_dir, **deepwalk_paras)
     :return:
     """
     __deepwalk_args__ = []
-    Debugger.info_print('embed_size: {}'.format(embed_size))
     ret = []
     Debugger.info_print('transition matrix size {}'.format(tmat.shape))
     for idx in range(tmat.shape[0]):
@@ -413,6 +412,7 @@ def graph_embedding(tmat, num_shapelet, embed_size, cache_dir, **deepwalk_paras)
         deepwalk_cmd = ' '.join(deepwalk_cmd)
         Debugger.info_print('run deepwalk with: {}'.format(deepwalk_cmd))
         _ = syscmd(deepwalk_cmd)
+        # 不能直接用，要改這邊，才能做出兩個embedding
         ret.append(__embedding2mat(fpath=embedding_path, num_vertices=num_shapelet,
                                    embed_size=embed_size))
     return np.array(ret, dtype=np.float32).reshape(tmat.shape[0], num_shapelet, embed_size)
