@@ -5,7 +5,9 @@ import itertools
 import psutil
 from subprocess import *
 import requests,json
-
+import pandas as pd
+results_df = pd.DataFrame(columns=['id','behav', 'accu', 'prec', 'recall', 'f1'])
+idx = 1
 class ModelUtils(object):
     """
         model utils for basic classifiers.
@@ -244,7 +246,20 @@ class Debugger(object):
             print("訊息已成功發送到Discord Webhook！")
         else:
             print("發送訊息到Discord Webhook時出現錯誤！")
-
+    @staticmethod
+    def file_write(behav,accu,prec,recall,f1, debug=True):
+        global results_df, idx
+        results_df.append({'id':idx,
+                            'behav': behav, 
+                            'accu': accu, 
+                            'prec': prec, 
+                            'recall': recall, 
+                            'f1': f1}, ignore_index=True)
+        idx+=1
+    @staticmethod
+    def file_close():
+        global results_df
+        results_df.to_csv('results.csv', index=False)
 
 class Queue:
     def __init__(self, max_size):

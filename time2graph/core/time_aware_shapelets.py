@@ -111,6 +111,7 @@ def __shapelet_candidate_loss(cand, time_series_set, label, num_segment, seg_len
     current_loss, loss_queue, cnt, nan_cnt = 0.0, Queue(max_size=int(num_batch * 0.2)), 0, 0
     current_main_loss, current_penalty_loss = 0.0, 0.0
     max_iters, optimizer = kwargs.get('max_iters', 1), kwargs.get('optimizer', 'Adam')
+    max_iters = 4
     if optimizer == 'Adam':
         optimizer = optim.Adam
     elif optimizer == 'Adadelta':

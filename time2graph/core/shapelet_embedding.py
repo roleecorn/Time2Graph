@@ -235,8 +235,6 @@ class ShapeletEmbedding(object):
         #                           debug=self.debug, init=init, warp=warp,
         #                           measurement=self.measurement, global_flag=self.global_flag)
         Debugger.info_print('embedding threshold {}'.format(self.dist_threshold))
-        for ddisti in sdist:
-            Debugger.info_print('sdist size {}'.format(ddisti.shape))
         parmap = []
         for i in range(len(self.cutpoints)):
             parmap.append(ParMap(
