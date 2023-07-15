@@ -314,18 +314,4 @@ class Time2Graph(ModelUtils):
         assert opt_args is not None, 'missing opt args specified'
         Debugger.info_print('using setup parameters')
         self.clf.set_params(**opt_args)
-        skf = StratifiedKFold(n_splits=n_splits, shuffle=True)
-        tmp = np.zeros(5, dtype=np.float32).reshape(-1)
-        metric_measure = self.return_metric_method(opt_metric=self.t2g.opt_metric)
-        measure_vector = [metric_measure, accuracy_score, precision_score, recall_score, f1_score]
-        for train_idx, test_idx in skf.split(x, Y):
-            self.clf.fit(x[train_idx], Y[train_idx])
-            y_pred, y_true = self.clf.predict(x[test_idx]), Y[test_idx]
-            for k in range(5):
-                tmp[k] += measure_vector[k](y_true=y_true, y_pred=y_pred)
-        tmp /= n_splits
-        if self.verbose:
-            Debugger.info_print('args {} for clf {}, performance: {:.4f}, {:.4f}, {:.4f}, {:.4f}'.format(
-                opt_args, self.kernel, tmp[1], tmp[2], tmp[3], tmp[4]))
-        Debugger.info_print('classifier fit')
         self.clf.fit(x, Y)
