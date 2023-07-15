@@ -96,7 +96,6 @@ def run(args,opt_args,T2Gidx):
     # 
     # 這邊不太確定y_train == 1還是==0
 
-
     transition_set=transition_matrixs(
                 time_series_set=x_train[np.argwhere(y_train == 1).reshape(-1), :, :], 
                 shapelets=m.t2g.shapelets, seg_length=args.seg_length,
@@ -109,7 +108,6 @@ def run(args,opt_args,T2Gidx):
 
     # ## 這裡要計算相鄰的兩個cutpoint間的關係
 
-
     cmat = cross_matrix(time_series_set=x_train[np.argwhere(y_train == 0).reshape(-1), :, :], 
                 shapelets=m.t2g.shapelets, seg_length=args.seg_length,
                 tflag=args.tflag, multi_graph=args.multi_graph, tanh=False, debug=True,
@@ -120,13 +118,11 @@ def run(args,opt_args,T2Gidx):
 
     tcmat=combine_mat(transition_set[0][0],transition_set[1][0],cmat)
 
-
     emb1,emb2 =cross_graph_embedding(
             tmat=shape_norm(tcmat,args.K*2), num_shapelet=len(m.t2g.shapelets)*2, embed_size=args.embed_size,
             cache_dir=cache_dir, **m.t2g.sembeds.deepwalk_args)
     m.t2g.sembeds.embeddings.append(emb1)
     m.t2g.sembeds.embeddings.append(emb2)
-
     afile=open(f"result_{T2Gidx}.csv",mode='a')
     x = m.extract_features(X=x_train,Z=z_train, init=args.init,mode=args.feature)
     y = m.extract_features(X=x_test,Z=z_test, init=args.init,mode=args.feature)
@@ -186,7 +182,8 @@ if __name__ =="__main__":
             break
         params_dict[T2Gidx]=(args.__dict__)
         T2Gidx+=1
-
+    # args.measurement ='gdtw'
+    # run(args=args,opt_args=opt_args,T2Gidx=T2Gidx)
     with open('params.json', 'w') as f:
         json.dump(params_dict, f, indent=4)
     print(time.time()-start)

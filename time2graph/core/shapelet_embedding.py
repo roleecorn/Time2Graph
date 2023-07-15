@@ -209,31 +209,16 @@ class ShapeletEmbedding(object):
             init index of time series. default 0.
         :return:
         """
-
         if self.embeddings is None:
             self.fit(time_series_set=time_series_set, shapelets=shapelets, warp=warp)
         sdist=[]
         for start,end in self.cutpoints:
-            # copy_shapelet=[ashape[start:end] for ashape in shapelets]
-            copy_shapelet=[]
-            for pattern, local_factor, global_factor,loss in shapelets:
-                copy_shapelet.append((
-                    pattern[start:end],
-                    local_factor[start:end],
-                    global_factor[start:end],
-                    loss))
             sdist.append(shapelet_distance(
-                # time_series_set=time_series_set,
                 time_series_set=time_series_set[:, start*self.seg_length:end*self.seg_length], 
-                                        #    shapelets=shapelets,
-                                        shapelets=copy_shapelet,
+                                           shapelets=shapelets,
                                   seg_length=self.seg_length, tflag=self.tflag, tanh=self.tanh,
                                   debug=self.debug, init=init, warp=warp,
                                   measurement=self.measurement, global_flag=self.global_flag))
-        # sdist = shapelet_distance(time_series_set=time_series_set, shapelets=shapelets,
-        #                           seg_length=self.seg_length, tflag=self.tflag, tanh=self.tanh,
-        #                           debug=self.debug, init=init, warp=warp,
-        #                           measurement=self.measurement, global_flag=self.global_flag)
         Debugger.info_print('embedding threshold {}'.format(self.dist_threshold))
         parmap = []
         for i in range(len(self.cutpoints)):

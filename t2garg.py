@@ -66,7 +66,7 @@ def t2g_paras():
     percentile =[5,10]
     embed_size = [16,32,64]
     optimizer = ['Adam','Adadelta','Adamax']
-    measurement =['gdtw']
+    measurement =['gdtw','gw']
     scaled =[True]
     kernel =['dts']
     # 8*2*2*3*3
