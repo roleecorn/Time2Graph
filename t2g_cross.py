@@ -20,7 +20,8 @@ from t2garg import parse_args,opt_clf_para,t2g_paras,clf_paras
 testhouse = [str(i).zfill(3) for i in TEST_HOUSE]
 trainhouse = [str(i).zfill(3) for i in TRAIN_HOUSE]
 
-
+f1max=0
+bestarg={},{}
 def run(args,opt_args,T2Gidx):
     x_train, y_train, x_test, y_test,z_train,z_test = load_house_dataset_by_houses_ex(
             TEST_HOUSE=testhouse,TRAIN_HOUSE=trainhouse,assign_behavior=behav)
@@ -141,6 +142,15 @@ def run(args,opt_args,T2Gidx):
             prec =precision_score(y_true=y_test, y_pred=y_pred)
             recall = recall_score(y_true=y_test, y_pred=y_pred)
             f1 = f1_score(y_true=y_test, y_pred=y_pred)
+            global f1max,bestarg
+            if f1>f1max:
+                f1max=f1
+                bestarg =(args,ar_g)
+                Debugger.dc_print('bestarg at f1 = {}'.format(f1))
+                time.sleep(1)
+                Debugger.dc_print(str(args.__dict__))
+                time.sleep(1)
+                Debugger.dc_print(str(ar_g))
             word+='ker:{}, accu {:.4f}, prec {:.4f}, recall {:.4f}, f1 {:.4f}\n'.format(                                                                          
                     k,accu,prec,recall,f1
                 )
@@ -173,7 +183,7 @@ if __name__ =="__main__":
         try :
             run(args=args,opt_args=opt_args,T2Gidx=T2Gidx)
         except KeyboardInterrupt:
-            Debugger.file_close()
+            break
         params_dict[T2Gidx]=(args.__dict__)
         T2Gidx+=1
 

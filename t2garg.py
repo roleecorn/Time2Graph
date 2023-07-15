@@ -69,7 +69,7 @@ def t2g_paras():
     measurement =['gdtw']
     scaled =[True]
     kernel =['dts']
-    # 8*2*2*3*3*2*3
+    # 8*2*2*3*3
 
     for (p1, p2, p3, p4, p5, p6, p7, p8, p9) in itertools.product(
             k, opt_metric, cmethod, percentile, embed_size, optimizer, measurement, scaled, kernel
@@ -122,7 +122,7 @@ def clf_paras(kernel):
     elif kernel == 'xgb':
         max_depth = [1, 2, 4, 8, 12, 16]
         learning_rate = [0.1, 0.2, 0.3]
-        n_jobs = 5
+        n_jobs = [5]
         class_weight = [1, 10, 50, 100]
         booster = ['gblinear', 'gbtree', 'dart']
         # 6*3*4*3
