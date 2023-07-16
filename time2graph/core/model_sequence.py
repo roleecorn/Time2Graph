@@ -97,8 +97,8 @@ class Time2GraphSequence(object):
         criterion = nn.CrossEntropyLoss()
         optimizer = optim.Adam(self.rnns.parameters(), lr=self.lr)
         if self.gpu_enable:
-            self.rnns.cuda()
-            criterion.cuda()
+            self.rnns.cuda(device=3)
+            criterion.cuda(device=3)
         train_dataset = DeepDataset(x=sequences, y=Y)
         train_dataloader = DeepDataloader(train_dataset, batch_size=self.batch_size, shuffle=True,
                                           num_workers=2)

@@ -123,7 +123,7 @@ class Time2Graph(ModelUtils):
                 feat = self.feature_scaler.fit_transform(X=feat)
             else:
                 feat = self.feature_scaler.transform(X=feat)
-        Z = Z.reshape(-1, 1)
+        # Z = Z.reshape(-1, 1)
         if mode == 'all':
             return np.concatenate((embed, feat), axis=1)
         elif mode == 'feat':

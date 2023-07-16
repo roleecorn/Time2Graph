@@ -304,13 +304,6 @@ def compute_sub_transition_matrix(time_series_set, shapelets, seg_length, tflag,
         )
     Debugger.info_print('{} edges involved in shapelets graph'.format(n_edges))
     tmat[tmat <= __tmat_threshold] = 0.0
-    # for k in range(gcnt):
-    #     for i in range(num_shapelet):
-    #         norms = np.sum(tmat[k, i, :])
-    #         if norms == 0:
-    #             tmat[k, i, i] = 1.0
-    #         else:
-    #             tmat[k, i, :] /= np.sum(tmat[k, i, :])
     return tmat, sdist, dist_threshold
 
 def transition_matrixs(time_series_set, shapelets, seg_length, tflag, multi_graph,
@@ -449,7 +442,6 @@ def cross_graph_embedding(tmat, num_shapelet, embed_size, cache_dir, **deepwalk_
         # 不能直接用，要改這邊，才能做出兩個embedding
         ret.append(__embedding2mat(fpath=embedding_path, num_vertices=num_shapelet,
                                    embed_size=embed_size))
-    print(len(ret))
     ret1=ret[0][0:num_shapelet//2]
     ret2=ret[0][num_shapelet//2:]
     # return np.array(ret, dtype=np.float32).reshape(tmat.shape[0], num_shapelet, embed_size)

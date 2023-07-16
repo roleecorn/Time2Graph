@@ -1,12 +1,15 @@
 
 import argparse
 import warnings
+from sklearn.exceptions import UndefinedMetricWarning
+warnings.filterwarnings("ignore", category=UndefinedMetricWarning)
 import pandas as pd
 import os,time,json,sys
 os.system("export PYTHONPATH=`readlink -f ./`")
 from config import *
 from houses import TEST_HOUSE,TRAIN_HOUSE
-from archive.load_tepco import load_house_dataset_by_houses,load_house_dataset_by_houses_ex
+from archive.load_tepco import load_house_dataset_by_houses_ex
+from archive.load_usr_dataset import load_usr_dataset_by_name
 from time2graph.utils.base_utils import Debugger
 from time2graph.core.model_TEPCO import Time2Graph
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
@@ -15,6 +18,7 @@ from time2graph.core.shapelet_embedding import ShapeletEmbedding
 from time2graph.core.shapelet_utils import transition_matrixs,__mat2edgelist,graph_embedding
 from time2graph.core.shapelet_utils import shapelet_distance,cross_graph_embedding
 from sklearn.preprocessing import minmax_scale
+
 from cross_matrix import cross_matrix,shape_norm,combine_mat
 from t2garg import parse_args,opt_clf_para,t2g_paras,clf_paras
 testhouse = [str(i).zfill(3) for i in TEST_HOUSE]
@@ -23,8 +27,39 @@ trainhouse = [str(i).zfill(3) for i in TRAIN_HOUSE]
 f1max=0
 bestarg={},{}
 def run(args,opt_args,T2Gidx):
-    x_train, y_train, x_test, y_test,z_train,z_test = load_house_dataset_by_houses_ex(
-            TEST_HOUSE=testhouse,TRAIN_HOUSE=trainhouse,assign_behavior=behav)
+    if args.dataset.startswith('ucr'):
+        dataset = args.dataset.rstrip('\n\r').split('-')[-1]
+
+        if dataset =='Earthquakes':
+            args.seg_length= 24
+            args.num_segment=21
+            args.K= 50
+            args.C= 800
+            args.cutpoints =[(0,11),(10,21)]
+        elif dataset =='Strawberry':
+            args.seg_length= 15
+            args.num_segment= 15
+            args.K=50
+            args.C= 800
+            args.cutpoints =[(0,8),(7,15)]
+        elif dataset == 'WormsTwoClass':
+            args.seg_length= 30
+            args.num_segment= 29
+            args.K=20
+            args.C=400
+            args.cutpoints =[(0,15),(14,29)]
+        else:
+            raise ValueError('not a ucr dataset')
+        
+        x_train, y_train, x_test, y_test = load_usr_dataset_by_name(
+            fname=dataset, length=args.seg_length * args.num_segment)
+        z_train,z_test = None,None
+    else:
+        args.seg_length= 5
+        args.num_segment= 5
+        args.cutpoints =[(0,3),(2,5)]
+        x_train, y_train, x_test, y_test,z_train,z_test = load_house_dataset_by_houses_ex(
+                TEST_HOUSE=testhouse,TRAIN_HOUSE=trainhouse,assign_behavior=behav)
     if float(sum(y_train) / len(y_train))<0.2:
         Debugger.info_print('resample')
         x_train_flattened = x_train.reshape(x_train.shape[0], -1)
@@ -39,7 +74,8 @@ def run(args,opt_args,T2Gidx):
     Debugger.info_print('test: {:.2f} positive ratio with {}'.format(float(sum(y_test) / len(y_test)),
                                                                         len(y_test)))
 
-
+    # print(x_train)
+    # sys.exit()
     m = Time2Graph(kernel=args.kernel, K=args.K, C=args.C, seg_length=args.seg_length,
                     opt_metric=args.opt_metric, init=args.init, gpu_enable=args.gpu_enable,
                     warp=args.warp, tflag=args.tflag, mode=args.embed,
@@ -123,7 +159,7 @@ def run(args,opt_args,T2Gidx):
             cache_dir=cache_dir, **m.t2g.sembeds.deepwalk_args)
     m.t2g.sembeds.embeddings.append(emb1)
     m.t2g.sembeds.embeddings.append(emb2)
-    afile=open(f"result_{T2Gidx}.csv",mode='a')
+    afile=open(f"src/result_{T2Gidx}.csv",mode='a')
     x = m.extract_features(X=x_train,Z=z_train, init=args.init,mode=args.feature)
     y = m.extract_features(X=x_test,Z=z_test, init=args.init,mode=args.feature)
     kers =['dts','rf','xgb']
@@ -132,7 +168,9 @@ def run(args,opt_args,T2Gidx):
         m.kernel=k
         for ar_g in clf_paras(kernel=k):
             m.clf=m.clf__()
-            m.train_classfit(x=x,Y=y_train,Z=z_train,n_splits=5,opt_args=ar_g)
+            # m.train_classfit(x=x,Y=y_train,Z=z_train,n_splits=5,opt_args=ar_g)
+            m.clf.set_params(**ar_g)
+            m.clf.fit(x, y_train)
             y_pred = m.clf.predict(y)
             accu=accuracy_score(y_true=y_test, y_pred=y_pred)
             prec =precision_score(y_true=y_test, y_pred=y_pred)
@@ -168,9 +206,12 @@ if __name__ =="__main__":
     start =time.time()
     args = parse_args()
     args.cutpoints=[(0,3),(2,5)]
-    be_all = ('sleep','meal','out','other')
-    behav='sleep'
+    datas_ = ['sleep','out','other','meal','ucr-Earthquakes','ucr-Strawberry','ucr-WormsTwoClass']
+
+    behav=datas_[2]
     args.dataset=behav
+    args.behav = behav
+    # args.measurement = 'gw'
     paras = t2g_paras()
     opt_args = opt_clf_para(args.kernel)
     for para in paras:
@@ -180,10 +221,9 @@ if __name__ =="__main__":
             run(args=args,opt_args=opt_args,T2Gidx=T2Gidx)
         except KeyboardInterrupt:
             break
+        # sys.exit()
         params_dict[T2Gidx]=(args.__dict__)
         T2Gidx+=1
-    # args.measurement ='gdtw'
-    # run(args=args,opt_args=opt_args,T2Gidx=T2Gidx)
     with open('params.json', 'w') as f:
         json.dump(params_dict, f, indent=4)
     print(time.time()-start)

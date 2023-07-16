@@ -61,6 +61,7 @@ import itertools
 
 def t2g_paras():
     k =  [i*10 for i in range(2,10)]
+    k = [10]
     opt_metric = ['f1']
     cmethod =['greedy','cluster']
     percentile =[5,10]
@@ -76,7 +77,7 @@ def t2g_paras():
     ):
         yield {
             'K': p1,
-            'C': p1*2,
+            'C': p1*6,
             'opt_metric': p2,
             'cmethod': p3,
             'percentile': p4,
