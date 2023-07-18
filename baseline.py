@@ -13,13 +13,7 @@ from archive.load_usr_dataset import load_usr_dataset_by_name
 from time2graph.utils.base_utils import Debugger
 from time2graph.core.model_TEPCO import Time2Graph
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
-from imblearn.under_sampling import RandomUnderSampler
-from time2graph.core.shapelet_embedding import ShapeletEmbedding
-from time2graph.core.shapelet_utils import transition_matrixs,__mat2edgelist,graph_embedding
-from time2graph.core.shapelet_utils import shapelet_distance,cross_graph_embedding
-from sklearn.preprocessing import minmax_scale
 
-from cross_matrix import cross_matrix,shape_norm,combine_mat
 from t2garg import parse_args,opt_clf_para,t2g_paras,clf_paras
 testhouse = [str(i).zfill(3) for i in TEST_HOUSE]
 trainhouse = [str(i).zfill(3) for i in TRAIN_HOUSE]
@@ -75,7 +69,7 @@ def run(args,opt_args,T2Gidx):
                     )
     x = m.fm.extract_features(samples=x_train)
     y = m.fm.extract_features(samples=x_test)
-    kers =['dts','rf','xgb']
+    kers =['svm']
     word = ""
     for k in kers:
         m.kernel=k
@@ -93,18 +87,18 @@ def run(args,opt_args,T2Gidx):
             if f1>f1max:
                 f1max=f1
                 bestarg =(args,ar_g)
-                Debugger.info_print('bestarg at f1 = {}'.format(f1))
-                time.sleep(1)
-                Debugger.info_print(str(args.__dict__))
-                time.sleep(1)
-                Debugger.info_print(str(ar_g))
+                # Debugger.dc_print('bestarg at f1 = {}'.format(f1))
+                # time.sleep(1)
+                # # Debugger.dc_print(str(args.__dict__))
+                # time.sleep(1)
+                # Debugger.dc_print(str(ar_g))
             word+='ker:{}\t accu {:.4f}\t prec {:.4f}\t recall {:.4f}\t f1 {:.4f}\n'.format(                                                                          
                     k,accu,prec,recall,f1
                 )
             if len(word)>1000:
-                Debugger.info_print(word)
+                # Debugger.info_print(word)
                 word=""
-    Debugger.dc_print(word)      
+    # Debugger.dc_print(word)      
     return
 
 if __name__ =="__main__":
@@ -114,14 +108,16 @@ if __name__ =="__main__":
     start =time.time()
     args = parse_args()
     datas_ = ['sleep','out','other','meal','ucr-Earthquakes','ucr-Strawberry','ucr-WormsTwoClass']
-    behav='sleep'
-    args.dataset=behav
-    args.behav = behav
-    paras = t2g_paras()
-    opt_args = opt_clf_para(args.kernel)
-    try :
-        run(args=args,opt_args=opt_args,T2Gidx=T2Gidx)
-    except KeyboardInterrupt:
-        pass
-    print(time.time()-start)
-    Debugger.dc_print('End')
+    behav=datas_[6]
+    for behav in datas_:
+        args.dataset=behav
+        args.behav = behav
+        paras = t2g_paras()
+        opt_args = opt_clf_para(args.kernel)
+        try :
+            run(args=args,opt_args=opt_args,T2Gidx=T2Gidx)
+        except KeyboardInterrupt:
+            pass
+        print(time.time()-start)
+        Debugger.dc_print(f'End {behav} {f1max}')
+        f1max =0 

@@ -92,7 +92,7 @@ def t2g_paras():
 def clf_paras(kernel):
     class_weight = 'balanced' 
     if kernel == 'lr':
-        penalty = ['l1', 'l2']
+        penalty = [ 'l2']
         c = [pow(5, i) for i in range(-3, 3)]
         intercept_scaling = [pow(5, i) for i in range(-3, 3)]
         for (p1, p2, p3) in itertools.product(penalty, c, intercept_scaling):
