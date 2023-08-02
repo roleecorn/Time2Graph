@@ -63,10 +63,17 @@ def t2g_paras():
     k =  [i*10 for i in range(2,10)]
     k = [10]
     opt_metric = ['f1']
-    cmethod =['greedy','cluster']
+    cmethod =[
+        'greedy',
+            #   'cluster'
+              ]
     percentile =[5,10]
     embed_size = [16,32,64]
-    optimizer = ['Adam','Adadelta','Adamax']
+    optimizer = [
+        'Adam',
+        # 'Adadelta',
+        # 'Adamax'
+        ]
     measurement =['gdtw','gw']
     scaled =[True]
     kernel =['dts']

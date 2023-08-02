@@ -27,6 +27,7 @@ trainhouse = [str(i).zfill(3) for i in TRAIN_HOUSE]
 f1max=0
 bestarg={},{}
 def run(args,opt_args,T2Gidx):
+    global f1max,bestarg
     if args.dataset.startswith('ucr'):
         dataset = args.dataset.rstrip('\n\r').split('-')[-1]
 
@@ -162,7 +163,7 @@ def run(args,opt_args,T2Gidx):
     afile=open(f"src/result_{T2Gidx}.csv",mode='a')
     x = m.extract_features(X=x_train,Z=z_train, init=args.init,mode=args.feature)
     y = m.extract_features(X=x_test,Z=z_test, init=args.init,mode=args.feature)
-    kers =['dts','rf','xgb']
+    kers =['dts']
     word = ""
     for k in kers:
         m.kernel=k
@@ -176,24 +177,26 @@ def run(args,opt_args,T2Gidx):
             prec =precision_score(y_true=y_test, y_pred=y_pred)
             recall = recall_score(y_true=y_test, y_pred=y_pred)
             f1 = f1_score(y_true=y_test, y_pred=y_pred)
-            global f1max,bestarg
             if f1>f1max:
                 f1max=f1
                 bestarg =(args,ar_g)
-                Debugger.dc_print('bestarg at f1 = {}'.format(f1))
-                time.sleep(1)
-                Debugger.dc_print(str(args.__dict__))
-                time.sleep(1)
+                Debugger.dc_print('bestarg {} at f1 = {}'.format(args.dataset,f1))
+                time.sleep(3)
+                Debugger.dc_print('ker:{}, accu {:.4f}, prec {:.4f}, recall {:.4f}, f1 {:.4f}\n'.format(                                                                          
+                    k,accu,prec,recall,f1
+                ))
+                time.sleep(3)
                 Debugger.dc_print(str(ar_g))
+                time.sleep(3)
+                Debugger.dc_print(str(args.__dict__))
+                time.sleep(3)
             word+='ker:{}, accu {:.4f}, prec {:.4f}, recall {:.4f}, f1 {:.4f}\n'.format(                                                                          
                     k,accu,prec,recall,f1
                 )
             if len(word)>1000:
                 afile.write(word)
                 afile.flush()
-                Debugger.dc_print(word)
                 word=""
-    Debugger.dc_print(word)
     afile.write(word)  
     afile.flush()  
     afile.close()        
@@ -214,17 +217,21 @@ if __name__ =="__main__":
     # args.measurement = 'gw'
     paras = t2g_paras()
     opt_args = opt_clf_para(args.kernel)
-    for para in paras:
-        for key, value in para.items():
-            setattr(args, key, value)
-        try :
-            run(args=args,opt_args=opt_args,T2Gidx=T2Gidx)
-        except KeyboardInterrupt:
-            break
-        # sys.exit()
-        params_dict[T2Gidx]=(args.__dict__)
-        T2Gidx+=1
-    with open('params.json', 'w') as f:
-        json.dump(params_dict, f, indent=4)
+    for behav in datas_[-1:]:
+        args.dataset=behav
+        args.behav = behav
+        for para in paras:
+            for key, value in para.items():
+                setattr(args, key, value)
+            try :
+                run(args=args,opt_args=opt_args,T2Gidx=T2Gidx)
+            except KeyboardInterrupt:
+                break
+            # sys.exit()
+            params_dict[T2Gidx]=(args.__dict__)
+            T2Gidx+=1
+        with open('params.json', 'w') as f:
+            json.dump(params_dict, f, indent=4)
+        f1max = 0
     print(time.time()-start)
     Debugger.dc_print('End')
